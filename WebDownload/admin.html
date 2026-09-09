@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ricochet Download Admin</title>
+  <style>
+    :root {
+      --bg:#0a0714;
+      --panel:#150e26;
+      --line:#3a2a5c;
+      --cyan:#2ee6ff;
+      --magenta:#ff2e88;
+      --amber:#ffc93c;
+      --ink:#f5f3ff;
+      --muted:#b9acd6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin:0; font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top, #1b1230, var(--bg) 60%);
+      color: var(--ink);
+      min-height:100vh;
+      display:flex; align-items:center; justify-content:center;
+      padding:30px;
+    }
+    .wrap {
+      width:min(900px, 100%);
+      background: var(--panel);
+      border:2px solid var(--line);
+      box-shadow: 0 0 30px rgba(46,230,255,0.14);
+      padding:30px;
+    }
+    h1 {
+      margin:0 0 20px; color: var(--amber);
+      font-size: clamp(24px, 3vw, 36px);
+    }
+    .stats {
+      display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap:16px; margin: 26px 0;
+    }
+    .card {
+      background: rgba(255,255,255,0.02); border:1px solid var(--line); padding:20px;
+    }
+    .label { color: var(--muted); font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+    .value {
+      margin-top:10px; font-size: clamp(28px, 6vw, 42px); font-weight: bold;
+      color: var(--cyan);
+    }
+    .value.magenta { color: var(--magenta); }
+    .panel {
+      margin-top:24px; display:flex; flex-wrap:wrap; gap:12px;
+      align-items:center;
+    }
+    button {
+      border:none; cursor:pointer; padding:12px 18px; font-weight:bold;
+      background: var(--magenta); color: #fff; border-radius: 0; box-shadow: 4px 4px 0 rgba(255,255,255,0.15);
+    }
+    button.secondary {
+      background: var(--cyan); color: #07131b; box-shadow: 4px 4px 0 rgba(255,255,255,0.15);
+    }
+    .small {
+      color: var(--muted); margin-top:20px; font-size: 14px;
+    }
+    a {
+      color: var(--cyan); text-decoration:none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Ricochet Download Admin</h1>
+
+    <div class="stats">
+      <div class="card">
+        <div class="label">Visitors</div>
+        <div class="value" id="visits">0</div>
+      </div>
+      <div class="card">
+        <div class="label">Downloads</div>
+        <div class="value magenta" id="downloads">0</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <button id="refreshBtn">Refresh data</button>
+      <button id="resetBtn" class="secondary">Reset counter</button>
+    </div>
+
+    <div class="small">
+      Public page: <a href="/">/</a> &nbsp;|&nbsp; API: <a href="/api/stats">/api/stats</a>
+    </div>
+  </div>
+
+  <script>
+    async function fetchJson(url, options = {}) {
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error('Request failed: ' + response.status);
+      return response.json();
+    }
+
+    function renderStats(stats) {
+      document.getElementById('visits').textContent = Number(stats.visits || 0).toLocaleString();
+      document.getElementById('downloads').textContent = Number(stats.downloads || 0).toLocaleString();
+    }
+
+    async function loadStats() {
+      try {
+        const stats = await fetchJson('/api/stats');
+        renderStats(stats);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', loadStats);
+    document.getElementById('resetBtn').addEventListener('click', async () => {
+      if (!confirm('Reset semua statistik download?')) return;
+      try {
+        const result = await fetchJson('/api/reset', { method: 'POST' });
+        renderStats(result.stats);
+      } catch (e) {
+        console.error(e);
+      }
+    });
+
+    loadStats();
+  </script>
+</body>
+</html>

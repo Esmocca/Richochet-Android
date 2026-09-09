@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ricochet Arcade — by Esmoocca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0a0714;
+    --bg-panel:#150e26;
+    --bg-panel-2:#1c1333;
+    --line:#3a2a5c;
+    --magenta:#ff2e88;
+    --cyan:#2ee6ff;
+    --amber:#ffc93c;
+    --ink:#f2effa;
+    --ink-dim:#a99bd1;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg-deep);
+    color:var(--ink);
+    font-family:'VT323', monospace;
+    font-size:20px;
+    line-height:1.5;
+    overflow-x:hidden;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+  h1,h2,h3,.pixel{ font-family:'Press Start 2P', monospace; }
+  a{ color:inherit; text-decoration:none; }
+
+  /* ---------- scanline / CRT overlay ---------- */
+  .crt::before{
+    content:"";
+    position:absolute; inset:0;
+    background:repeating-linear-gradient(
+      0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px,
+      transparent 2px, transparent 3px
+    );
+    pointer-events:none;
+    z-index:5;
+    mix-blend-mode:multiply;
+  }
+  .crt::after{
+    content:"";
+    position:absolute; inset:0;
+    box-shadow: inset 0 0 14vw rgba(0,0,0,0.75);
+    pointer-events:none;
+    z-index:6;
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:6vh 5vw;
+    overflow:hidden;
+    border-bottom:2px solid var(--line);
+  }
+  #bgCanvas{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    z-index:0;
+    opacity:0.55;
+    filter:saturate(1.15);
+  }
+  .hero-veil{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(10,7,20,0.55) 0%, rgba(10,7,20,0.35) 40%, rgba(10,7,20,0.92) 100%);
+    z-index:1;
+  }
+  .hero-content{ position:relative; z-index:7; max-width:900px; }
+  .presents{
+    font-size:12px;
+    letter-spacing:2px;
+    color:var(--cyan);
+    text-shadow:0 0 8px rgba(46,230,255,0.7);
+    margin-bottom:22px;
+  }
+  .presents span{ color:var(--ink-dim); }
+  .title{
+    font-size:clamp(34px, 8vw, 74px);
+    line-height:1.15;
+    color:var(--ink);
+    text-shadow:
+      0 0 6px rgba(255,255,255,0.5),
+      0 0 22px var(--magenta),
+      0 0 46px rgba(255,46,136,0.55);
+    letter-spacing:2px;
+  }
+  .title em{
+    font-style:normal;
+    color:var(--amber);
+    text-shadow:0 0 6px rgba(255,255,255,0.4), 0 0 22px var(--amber), 0 0 46px rgba(255,201,60,0.55);
+  }
+  .tagline{
+    margin-top:22px;
+    font-size:24px;
+    color:var(--ink-dim);
+    max-width:540px;
+    margin-left:auto; margin-right:auto;
+  }
+  .cta-row{
+    margin-top:40px;
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .btn{
+    font-family:'Press Start 2P', monospace;
+    font-size:13px;
+    padding:16px 26px;
+    border:3px solid var(--ink);
+    background:var(--bg-deep);
+    color:var(--ink);
+    cursor:pointer;
+    position:relative;
+    box-shadow:5px 5px 0 var(--magenta);
+    transition:transform .12s ease, box-shadow .12s ease;
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+  }
+  .btn:hover{ transform:translate(-2px,-2px); box-shadow:7px 7px 0 var(--magenta); }
+  .btn:active{ transform:translate(1px,1px); box-shadow:3px 3px 0 var(--magenta); }
+  .btn.secondary{ box-shadow:5px 5px 0 var(--cyan); border-color:var(--cyan); color:var(--cyan);}
+  .btn.secondary:hover{ box-shadow:7px 7px 0 var(--cyan); }
+  .btn.amber{ box-shadow:5px 5px 0 var(--amber); border-color:var(--amber); color:var(--amber);}
+  .btn.amber:hover{ box-shadow:7px 7px 0 var(--amber); }
+  .filesize{ font-family:'VT323', monospace; font-size:15px; color:var(--ink-dim); margin-top:10px; }
+
+  .scroll-cue{
+    position:absolute; bottom:26px; left:50%; transform:translateX(-50%);
+    z-index:7; font-size:14px; color:var(--ink-dim);
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    animation:bob 1.6s ease-in-out infinite;
+  }
+  @keyframes bob{ 0%,100%{transform:translate(-50%,0);} 50%{transform:translate(-50%,8px);} }
+
+  /* ---------- STAT TICKER ---------- */
+  .ticker{
+    border-bottom:2px solid var(--line);
+    background:var(--bg-panel);
+    padding:22px 5vw;
+    display:flex;
+    flex-wrap:wrap;
+    gap:28px;
+    justify-content:center;
+    align-items:center;
+  }
+  .stat{ text-align:center; min-width:150px; }
+  .stat .num{
+    font-family:'Press Start 2P', monospace;
+    font-size:clamp(20px,4vw,30px);
+    color:var(--amber);
+    text-shadow:0 0 10px rgba(255,201,60,0.55);
+  }
+  .stat .lbl{ font-size:15px; color:var(--ink-dim); margin-top:8px; }
+  .stat.cyan .num{ color:var(--cyan); text-shadow:0 0 10px rgba(46,230,255,0.55); }
+  .stat.magenta .num{ color:var(--magenta); text-shadow:0 0 10px rgba(255,46,136,0.55); }
+
+  /* ---------- SECTIONS ---------- */
+  section{ padding:80px 6vw; max-width:1000px; margin:0 auto; }
+  .panel{
+    background:var(--bg-panel);
+    border:2px solid var(--line);
+    padding:36px clamp(20px,4vw,48px);
+    position:relative;
+  }
+  .panel::before{
+    content:"";
+    position:absolute; top:8px; left:8px; right:-8px; bottom:-8px;
+    border:2px solid var(--line);
+    z-index:-1;
+  }
+  h2.section-title{
+    font-size:clamp(18px,3vw,26px);
+    color:var(--ink);
+    margin-bottom:24px;
+    line-height:1.5;
+  }
+  h2.section-title .dot{ color:var(--magenta); }
+  p{ font-size:20px; color:var(--ink-dim); max-width:70ch; }
+  p + p{ margin-top:16px; }
+
+  .rules-list, .controls-list, .tech-list{
+    list-style:none;
+    margin-top:22px;
+    display:grid;
+    gap:14px;
+  }
+  .rules-list li, .controls-list li{
+    padding-left:26px;
+    position:relative;
+    font-size:20px;
+    color:var(--ink);
+  }
+  .rules-list li::before, .controls-list li::before{
+    content:"▸";
+    position:absolute; left:0; color:var(--cyan);
+  }
+  .controls-list b{ color:var(--amber); font-weight:normal; }
+
+  .tech-list{
+    grid-template-columns:repeat(auto-fill, minmax(220px,1fr));
+  }
+  .chip{
+    border:2px solid var(--line);
+    background:var(--bg-panel-2);
+    padding:16px 18px;
+  }
+  .chip .k{ color:var(--cyan); font-size:15px; letter-spacing:1px; }
+  .chip .v{ color:var(--ink); font-size:20px; margin-top:4px; }
+
+  .two-col{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-columns:1fr;
+    gap:40px;
+  }
+  @media (max-width:760px){ .two-col{ grid-template-columns:1fr; } }
+  .two-col .panel{
+    display:grid;
+    grid-template-columns:auto 1fr;
+    gap:0 32px;
+    align-items:start;
+  }
+  .two-col .panel h2.section-title{
+    grid-column:1 / -1;
+  }
+  .two-col .panel .rules-list,
+  .two-col .panel .controls-list{
+    grid-column:1 / -1;
+    columns:2;
+    column-gap:32px;
+  }
+  .two-col .panel .rules-list li,
+  .two-col .panel .controls-list li{
+    break-inside:avoid;
+  }
+  @media (max-width:600px){
+    .two-col .panel .rules-list,
+    .two-col .panel .controls-list{
+      columns:1;
+    }
+  }
+
+  /* ---------- SUPPORT / TRAKTEER ---------- */
+  .support{
+    text-align:center;
+    border-top:2px solid var(--line);
+    border-bottom:2px solid var(--line);
+    background:
+      linear-gradient(var(--bg-panel), var(--bg-panel)) padding-box,
+      repeating-linear-gradient(45deg, var(--amber) 0 10px, var(--bg-deep) 10px 20px) border-box;
+    padding:70px 6vw;
+  }
+  .support h2{ font-size:clamp(18px,3vw,26px); margin-bottom:14px; }
+  .support p{ margin:0 auto 26px; }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    padding:50px 6vw 70px;
+    text-align:center;
+    color:var(--ink-dim);
+    font-size:15px;
+  }
+  footer .brand{
+    font-family:'Press Start 2P', monospace;
+    font-size:14px;
+    color:var(--ink);
+    margin-bottom:10px;
+  }
+  footer .brand em{ color:var(--magenta); font-style:normal; }
+</style>
+</head>
+<body>
+
+  <!-- ================= HERO ================= -->
+  <section class="hero crt" aria-label="Ricochet Arcade intro">
+    <canvas id="bgCanvas"></canvas>
+    <div class="hero-veil"></div>
+    <div class="hero-content">
+      <div class="presents"><span>ESMOOCCA</span> PRESENTS</div>
+      <h1 class="title">RICOCHET<br><em>ARCADE</em></h1>
+      <p class="tagline">Classic 2D physics brick-breaker, rebuilt for Android. Aim. Bounce. Clear the stage.</p>
+      <div class="cta-row">
+        <a class="btn" id="downloadBtn" href="./ricochet-arcade.apk" download>⬇ DOWNLOAD APK</a>
+        <a class="btn amber" href="https://trakteer.id/esmoocca" target="_blank" rel="noopener">☕ TRAKTEER</a>
+      </div>
+      <div class="filesize">app-debug.apk · Android · ~5.4 MB</div>
+    </div>
+    <div class="scroll-cue">▼ SCROLL ▼</div>
+  </section>
+
+  <!-- ================= LIVE STATS ================= -->
+  <div class="ticker" aria-label="Statistik pengunjung">
+    <div class="stat cyan">
+      <div class="num" id="visitCount">000000</div>
+      <div class="lbl">PLAYERS VISITED</div>
+    </div>
+    <div class="stat magenta">
+      <div class="num" id="downloadCount">000000</div>
+      <div class="lbl">DOWNLOADS</div>
+    </div>
+    <div class="stat">
+      <div class="num">v1.0</div>
+      <div class="lbl">CURRENT BUILD</div>
+    </div>
+  </div>
+
+  <!-- ================= ABOUT ================= -->
+  <section>
+    <div class="panel">
+      <h2 class="section-title"><span class="dot">■</span> RICOCHET ARCADE</h2>
+      <p>Welcome to Ricochet Arcade for Android! This is a mobile port of the classic 2D physics-based arcade puzzle game, completely rebuilt from the C++ (SFML) original using modern web technologies (HTML5 Canvas &amp; JavaScript) and wrapped into a native Android application using Capacitor.</p>
+    </div>
+  </section>
+
+  <!-- ================= RULES ================= -->
+  <section>
+    <div class="two-col">
+      <div class="panel">
+        <h2 class="section-title"><span class="dot">■</span> RULES &amp; GAMEPLAY</h2>
+        <ul class="rules-list">
+          <li>You control a paddle at the bottom of the screen.</li>
+          <li>Aim and bounce the ball to destroy the layout of targets (bricks) above.</li>
+          <li>The ball reflects off the walls, ceiling, and your paddle based on the angle of incidence.</li>
+          <li>Hitting a target destroys it and increases your score.</li>
+          <li>Clear all targets on the screen to complete the stage.</li>
+          <li>If the ball falls past your paddle — it's Game Over!</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2 class="section-title"><span class="dot">■</span> TOUCH CONTROLS</h2>
+        <ul class="controls-list">
+          <li><b>◀ / ▶ buttons</b> — tap and hold to move your paddle left or right.</li>
+          <li><b>Menu navigation</b> — tap directly on PLAY, OPTIONS, or EXIT to select.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TECH STACK ================= -->
+  <section>
+    <div class="panel">
+      <h2 class="section-title"><span class="dot">■</span> TECH STACK</h2>
+      <ul class="tech-list">
+        <li class="chip"><div class="k">GAME ENGINE</div><div class="v">Custom HTML5 Canvas Engine (Vanilla JS)</div></li>
+        <li class="chip"><div class="k">AUDIO ENGINE</div><div class="v">Web Audio API — procedural chiptune SFX &amp; BGM</div></li>
+        <li class="chip"><div class="k">NATIVE WRAPPER</div><div class="v">Ionic Capacitor (Android Studio / Gradle)</div></li>
+        <li class="chip"><div class="k">ORIGIN</div><div class="v">Rebuilt from a C++ (SFML) original</div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= SUPPORT ================= -->
+  <section class="support" style="max-width:none;">
+    <h2 class="pixel">ENJOYING THE GAME?</h2>
+    <p>Ricochet Arcade is made independently by Esmoocca. If you'd like to support future updates and new stages, buy me a coffee.</p>
+    <a class="btn amber" href="https://trakteer.id/esmoocca" target="_blank" rel="noopener">☕ SUPPORT ON TRAKTEER</a>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer>
+    <div class="brand"><em>ESMOOCCA</em> PRODUCTION</div>
+    <div>Ricochet Arcade for Android · Built with HTML5 Canvas, Capacitor &amp; a lot of coffee.</div>
+    <div id="footYear"></div>
+  </footer>
+
+<script>
+/* ============ FOOTER YEAR ============ */
+document.getElementById('footYear').textContent = '© ' + new Date().getFullYear() + ' Esmoocca. All rights reserved.';
+
+/* ============ BACKGROUND GAMEPLAY ANIMATION (decorative, non-interactive, auto-play) ============ */
+(function(){
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, DPR;
+
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth;
+    H = canvas.clientHeight;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    setupBricks();
+  }
+
+  const colors = ['#ff2e88', '#2ee6ff', '#ffc93c', '#8b6bff'];
+  let bricks = [];
+  const rows = 5, cols = 8;
+  let brickW, brickH, gap = 6, top = 60, side = 30;
+
+  function setupBricks(){
+    brickW = (W - side*2 - gap*(cols-1)) / cols;
+    brickH = 20;
+    bricks = [];
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        bricks.push({
+          x: side + c*(brickW+gap),
+          y: top + r*(brickH+gap),
+          w: brickW, h: brickH,
+          alive: true,
+          color: colors[r % colors.length]
+        });
+      }
+    }
+  }
+
+  const paddle = { w: 90, h: 14, x: 0, y: 0 };
+  let ball = { x: 0, y: 0, vx: 2.6, vy: -3.1, r: 7 };
+
+  function resetBall(){
+    ball.x = W/2; ball.y = H*0.55;
+    ball.vx = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random()*1.2);
+    ball.vy = -(2.6 + Math.random()*1.2);
+  }
+
+  function initScene(){
+    paddle.y = H - 40;
+    resetBall();
+  }
+
+  function step(){
+    // paddle "AI" follows the ball with easing (auto-play, no user input)
+    const targetX = ball.x - paddle.w/2;
+    paddle.x += (targetX - paddle.x) * 0.06;
+    paddle.x = Math.max(6, Math.min(W - paddle.w - 6, paddle.x));
+
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    if(ball.x - ball.r < 0){ ball.x = ball.r; ball.vx *= -1; }
+    if(ball.x + ball.r > W){ ball.x = W - ball.r; ball.vx *= -1; }
+    if(ball.y - ball.r < 0){ ball.y = ball.r; ball.vy *= -1; }
+
+    // paddle collision
+    if(ball.y + ball.r >= paddle.y && ball.y + ball.r <= paddle.y + paddle.h + 8 &&
+       ball.x >= paddle.x - 6 && ball.x <= paddle.x + paddle.w + 6 && ball.vy > 0){
+      const hit = (ball.x - (paddle.x + paddle.w/2)) / (paddle.w/2);
+      ball.vx = hit * 3.4;
+      ball.vy = -Math.abs(ball.vy);
+      ball.y = paddle.y - ball.r;
+    }
+
+    // brick collisions
+    let aliveCount = 0;
+    for(const b of bricks){
+      if(!b.alive) continue;
+      aliveCount++;
+      if(ball.x + ball.r > b.x && ball.x - ball.r < b.x + b.w &&
+         ball.y + ball.r > b.y && ball.y - ball.r < b.y + b.h){
+        b.alive = false;
+        ball.vy *= -1;
+        break;
+      }
+    }
+    if(aliveCount === 0) setupBricks();
+
+    // ball fell past paddle -> respawn (endless demo loop)
+    if(ball.y - ball.r > H){ resetBall(); }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // bricks
+    for(const b of bricks){
+      if(!b.alive) continue;
+      ctx.fillStyle = b.color;
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.globalAlpha = 1;
+    }
+
+    // paddle
+    ctx.fillStyle = '#f2effa';
+    ctx.shadowColor = '#2ee6ff';
+    ctx.shadowBlur = 14;
+    ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
+    ctx.shadowBlur = 0;
+
+    // ball
+    ctx.beginPath();
+    ctx.fillStyle = '#ffc93c';
+    ctx.shadowColor = '#ffc93c';
+    ctx.shadowBlur = 16;
+    ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  let raf;
+  function loop(){
+    step();
+    draw();
+    raf = requestAnimationFrame(loop);
+  }
+
+  window.addEventListener('resize', () => {
+    resize();
+  });
+
+  resize();
+  initScene();
+  loop();
+})();
+
+/* ============ LIVE VISITOR / DOWNLOAD COUNTERS (server-backed, shared across users) ============ */
+(function(){
+  const visitEl = document.getElementById('visitCount');
+  const downloadEl = document.getElementById('downloadCount');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  function fmt(n){ return String(Math.max(0, Math.floor(n))).padStart(6, '0'); }
+
+  async function fetchJson(url, options = {}) {
+    const response = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options
+    });
+    if (!response.ok) {
+      throw new Error('Request failed: ' + response.status);
+    }
+    return response.json();
+  }
+
+  async function loadStats(){
+    try {
+      const stats = await fetchJson('/api/stats');
+      visitEl.textContent = fmt(stats.visits || 0);
+      downloadEl.textContent = fmt(stats.downloads || 0);
+      return stats;
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+      visitEl.textContent = fmt(0);
+      downloadEl.textContent = fmt(0);
+      return { visits: 0, downloads: 0 };
+    }
+  }
+
+  (async function initVisits(){
+    try {
+      const stats = await fetchJson('/api/track/visit');
+      visitEl.textContent = fmt(stats.visits || 0);
+    } catch (error) {
+      console.error('Failed to track visit:', error);
+      await loadStats();
+    }
+  })();
+
+  (async function initDownloads(){
+    await loadStats();
+  })();
+
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', async function(event){
+      try {
+        const stats = await fetchJson('/api/track/download');
+        downloadEl.textContent = fmt(stats.downloads || 0);
+        return true;
+      } catch (error) {
+        console.error('Failed to track download:', error);
+        return true;
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>

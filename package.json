@@ -1,0 +1,22 @@
+{
+  "name": "ricochet-arcade-hd",
+  "version": "1.0.0",
+  "description": "Ricochet Arcade HD - Retro Block Breaker Game for Android",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'No build step needed - static files'",
+    "start": "node server.js",
+    "docker:build": "docker build -t ricochet-download .",
+    "docker:run": "docker run --rm -d -p 3000:3000 --name ricochet-download ricochet-download",
+    "cap:init": "npx cap init \"Ricochet Arcade HD\" com.esmoocca.ricochet --web-dir .",
+    "cap:add-android": "npx cap add android",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
+  }
+}

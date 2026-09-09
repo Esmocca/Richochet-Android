@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ricochet Arcade HD</string>
+    <string name="title_activity_main">Ricochet Arcade HD</string>
+    <string name="package_name">com.esmoocca.ricochet</string>
+    <string name="custom_url_scheme">com.esmoocca.ricochet</string>
+</resources>
