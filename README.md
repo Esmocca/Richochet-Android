@@ -1,4 +1,4 @@
-# Ricochet Arcade HD - Android Edition
+# Ricochet Arcade - Android Edition
 
 <img width="1276" height="721" alt="image" src="https://github.com/user-attachments/assets/ffe265ff-d74a-4352-a458-543b5c60cdc1" />
 
