@@ -1,17 +1,12 @@
-// =====================================================
-// Ricochet Arcade HD — Full Game Engine
+// Ricochet Arcade
 // Port from C++ SFML to HTML5 Canvas
 // Game By: Esmoocca
-// =====================================================
 
 const GameState = { Menu: 0, Options: 1, Playing: 2, StageClear: 3, GameOver: 4 };
 
-// Virtual game world resolution (matches SFML version)
 const V_WIDTH = 320;
 const V_HEIGHT = 240;
 const PLAY_AREA_WIDTH = 250;
-
-// ─── Drawing Helpers ──────────────────────────────────
 
 function rgba(r, g, b, a = 255) {
     return `rgba(${r},${g},${b},${a / 255})`;
