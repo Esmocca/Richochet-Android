@@ -83,8 +83,6 @@ function textWidth(ctx, text, size) {
     return ctx.measureText(text).width;
 }
 
-// ─── Game Class ───────────────────────────────────────
-
 class Game {
     constructor(canvas) {
         this.canvas = canvas;
