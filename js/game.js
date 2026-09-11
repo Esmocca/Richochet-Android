@@ -1,7 +1,6 @@
-// Ricochet Arcade HD
 // Port from C++ SFML to HTML5 Canvas
 // Game By: Esmoocca
-// Enhanced Edition — Full Feature Implementation
+// Beta Test Version enchanted ui and stages
 
 const GameState = { Menu: 0, Options: 1, Playing: 2, StageClear: 3, GameOver: 4, Paused: 5 };
 
