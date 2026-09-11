@@ -1,7 +1,6 @@
 package com.esmoocca.ricochet;
 
 import android.os.Bundle;
-import android.view.View;
 import android.view.WindowManager;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -27,6 +26,15 @@ public class MainActivity extends BridgeActivity {
             controller.setSystemBarsBehavior(
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             );
+        }
+
+        // Enable DOM Storage & WebSettings for Android WebView
+        if (this.bridge != null && this.bridge.getWebView() != null) {
+            android.webkit.WebSettings webSettings = this.bridge.getWebView().getSettings();
+            webSettings.setDomStorageEnabled(true);
+            webSettings.setDatabaseEnabled(true);
+            webSettings.setAllowFileAccess(true);
+            webSettings.setAllowContentAccess(true);
         }
     }
 

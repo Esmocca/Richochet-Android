@@ -94,7 +94,7 @@
             right: 15px;
         }
 
-        /* Loading screen */
+        /* ─── Loading Screen ─── */
         #loading {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -106,18 +106,144 @@
             z-index: 100;
             font-family: 'PixelFont', monospace;
             color: #0ff;
+            transition: opacity 0.6s ease;
+            overflow: hidden;
         }
 
-        #loading h1 {
-            font-size: 24px;
+        /* Scanline overlay */
+        #loading::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 255, 0.02) 2px,
+                rgba(0, 255, 255, 0.02) 4px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Neon sweep */
+        #loading::after {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: 0;
+            right: 0;
+            height: 200%;
+            background: linear-gradient(
+                180deg,
+                transparent 0%,
+                transparent 45%,
+                rgba(0, 255, 255, 0.08) 48%,
+                rgba(0, 255, 255, 0.15) 50%,
+                rgba(0, 255, 255, 0.08) 52%,
+                transparent 55%,
+                transparent 100%
+            );
+            animation: neonSweep 2.5s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        @keyframes neonSweep {
+            0% { transform: translateY(-20%); }
+            100% { transform: translateY(70%); }
+        }
+
+        .loading-content {
+            position: relative;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #loading .logo-text {
+            font-size: 36px;
             color: #ffd700;
-            margin-bottom: 10px;
+            letter-spacing: 8px;
+            margin-bottom: 4px;
+            text-shadow:
+                0 0 10px rgba(255, 215, 0, 0.6),
+                0 0 20px rgba(255, 215, 0, 0.3),
+                0 0 40px rgba(255, 215, 0, 0.1),
+                2px 2px 0 rgba(0, 100, 255, 0.8);
+            animation: glitchTitle 4s ease-in-out infinite;
         }
 
-        #loading p {
-            font-size: 14px;
+        @keyframes glitchTitle {
+            0%, 95%, 100% { transform: translate(0, 0); opacity: 1; }
+            96% { transform: translate(-3px, 1px); opacity: 0.9; }
+            97% { transform: translate(2px, -1px); opacity: 1; }
+            98% { transform: translate(-1px, 0); opacity: 0.95; }
+        }
+
+        .logo-subtitle {
+            font-size: 10px;
+            color: rgba(0, 220, 255, 0.8);
+            letter-spacing: 12px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+
+        #loadingMessages {
+            font-size: 11px;
             color: #0ff;
-            animation: pulse 1s infinite;
+            margin-bottom: 16px;
+            min-height: 16px;
+            animation: pulse 1.2s infinite;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+        }
+
+        .progress-container {
+            width: 220px;
+            height: 8px;
+            background: rgba(0, 255, 255, 0.08);
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #00d2ff 0%, #00ff80 40%, #3a7bd5 100%);
+            box-shadow:
+                0 0 8px rgba(0, 210, 255, 0.8),
+                0 0 15px rgba(0, 210, 255, 0.4);
+            transition: width 0.2s ease;
+            position: relative;
+        }
+
+        /* Shimmer on progress bar */
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -50%; right: -50%; bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.3) 50%,
+                transparent 100%
+            );
+            animation: shimmer 1.5s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .loading-footer {
+            font-size: 9px;
+            color: rgba(80, 120, 160, 0.6);
+            letter-spacing: 2px;
         }
 
         @keyframes pulse {
@@ -128,9 +254,48 @@
 </head>
 <body>
     <div id="loading">
-        <h1>RICOCHET</h1>
-        <p>LOADING...</p>
+        <div class="loading-content">
+            <div class="logo-text">RICOCHET</div>
+            <div class="logo-subtitle">ARCADE HD</div>
+            <div id="loadingMessages">INITIALIZING QUANTUM CORE...</div>
+            <div class="progress-container">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+            <div class="loading-footer">ESMOOCCA GAMES</div>
+        </div>
     </div>
+    <script>
+        (function() {
+            var bar = document.getElementById('progressBar');
+            var msg = document.getElementById('loadingMessages');
+            var p = 0;
+            var msgs = [
+                'INITIALIZING QUANTUM CORE...',
+                'LOADING BRICK MATRICES...',
+                'CALIBRATING PADDLE SYSTEMS...',
+                'SYNCING PARTICLE ENGINE...',
+                'ESTABLISHING NEURAL LINK...',
+                'READY TO LAUNCH!'
+            ];
+            var timer = setInterval(function() {
+                p += Math.random() * 18 + 5;
+                if (p >= 100) {
+                    p = 100;
+                    clearInterval(timer);
+                    setTimeout(function() {
+                        var el = document.getElementById('loading');
+                        if (el) el.style.opacity = '0';
+                        setTimeout(function() { if (el) el.style.display = 'none'; }, 600);
+                    }, 300);
+                }
+                if (bar) bar.style.width = p + '%';
+                if (msg) {
+                    var idx = Math.min(Math.floor(p / 100 * msgs.length), msgs.length - 1);
+                    msg.textContent = msgs[idx];
+                }
+            }, 80);
+        })();
+    </script>
 
     <canvas id="gameCanvas"></canvas>
 
