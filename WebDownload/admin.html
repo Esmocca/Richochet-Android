@@ -1,130 +1,738 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ricochet Download Admin</title>
-  <style>
-    :root {
-      --bg:#0a0714;
-      --panel:#150e26;
-      --line:#3a2a5c;
-      --cyan:#2ee6ff;
-      --magenta:#ff2e88;
-      --amber:#ffc93c;
-      --ink:#f5f3ff;
-      --muted:#b9acd6;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin:0; font-family: Arial, sans-serif;
-      background: radial-gradient(circle at top, #1b1230, var(--bg) 60%);
-      color: var(--ink);
-      min-height:100vh;
-      display:flex; align-items:center; justify-content:center;
-      padding:30px;
-    }
-    .wrap {
-      width:min(900px, 100%);
-      background: var(--panel);
-      border:2px solid var(--line);
-      box-shadow: 0 0 30px rgba(46,230,255,0.14);
-      padding:30px;
-    }
-    h1 {
-      margin:0 0 20px; color: var(--amber);
-      font-size: clamp(24px, 3vw, 36px);
-    }
-    .stats {
-      display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap:16px; margin: 26px 0;
-    }
-    .card {
-      background: rgba(255,255,255,0.02); border:1px solid var(--line); padding:20px;
-    }
-    .label { color: var(--muted); font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
-    .value {
-      margin-top:10px; font-size: clamp(28px, 6vw, 42px); font-weight: bold;
-      color: var(--cyan);
-    }
-    .value.magenta { color: var(--magenta); }
-    .panel {
-      margin-top:24px; display:flex; flex-wrap:wrap; gap:12px;
-      align-items:center;
-    }
-    button {
-      border:none; cursor:pointer; padding:12px 18px; font-weight:bold;
-      background: var(--magenta); color: #fff; border-radius: 0; box-shadow: 4px 4px 0 rgba(255,255,255,0.15);
-    }
-    button.secondary {
-      background: var(--cyan); color: #07131b; box-shadow: 4px 4px 0 rgba(255,255,255,0.15);
-    }
-    .small {
-      color: var(--muted); margin-top:20px; font-size: 14px;
-    }
-    a {
-      color: var(--cyan); text-decoration:none;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ricochet · Download Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0714;
+    --bg-grid: #120c22;
+    --panel: #140e24;
+    --panel-raised: #1a1230;
+    --line: #322550;
+    --line-bright: #4a3878;
+    --cyan: #2ee6ff;
+    --magenta: #ff2e88;
+    --amber: #ffc93c;
+    --green: #3dffb0;
+    --ink: #f3f0ff;
+    --muted: #9084b8;
+    --muted-dim: #5f5486;
+    --radius: 2px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { color-scheme: dark; }
+
+  body {
+    margin: 0;
+    font-family: 'Space Grotesk', Arial, sans-serif;
+    background:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px) 0 0 / 100% 42px,
+      radial-gradient(circle at 20% -10%, #241a42 0%, var(--bg) 55%);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 32px 20px 80px;
+  }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .shell {
+    width: min(1040px, 100%);
+    margin: 0 auto;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 28px;
+  }
+
+  .title-block h1 {
+    margin: 0;
+    font-size: clamp(26px, 3.4vw, 38px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  .title-block h1 span {
+    color: var(--cyan);
+  }
+
+  .title-block p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 8px 14px;
+  }
+
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+  }
+  .dot.offline { background: var(--magenta); box-shadow: 0 0 8px var(--magenta); }
+  .dot.pulse { animation: pulse 1.8s ease-in-out infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .35; }
+  }
+
+  /* ---------- Stat cards ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--panel);
+    padding: 22px 22px 20px;
+    position: relative;
+  }
+
+  .stat-card .label {
+    color: var(--muted);
+    font-size: 12.5px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .stat-card .value {
+    margin-top: 12px;
+    font-size: clamp(30px, 5vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--cyan);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .stat-card .value.magenta { color: var(--magenta); }
+  .stat-card .value.amber { color: var(--amber); }
+
+  .stat-card .delta {
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .stat-card .delta.down { color: var(--magenta); }
+
+  /* ---------- Panels ---------- */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    margin-bottom: 20px;
+  }
+
+  .panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .panel-head h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .range-toggle {
+    display: flex;
+    border: 1px solid var(--line);
+  }
+
+  .range-toggle button {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 6px 12px;
+    cursor: pointer;
+    border-right: 1px solid var(--line);
+  }
+  .range-toggle button:last-child { border-right: none; }
+  .range-toggle button.active {
+    background: var(--cyan);
+    color: #06141a;
+  }
+  .range-toggle button:focus-visible,
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
+
+  .chart-wrap {
+    padding: 20px;
+  }
+
+  svg.trend { width: 100%; height: 220px; display: block; }
+  .grid-line { stroke: var(--line); stroke-width: 1; }
+  .trend-visits { fill: none; stroke: var(--cyan); stroke-width: 2; }
+  .trend-downloads { fill: none; stroke: var(--magenta); stroke-width: 2; }
+  .trend-area { fill: url(#areaFade); opacity: .5; }
+  .axis-label { fill: var(--muted-dim); font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+
+  .legend { display: flex; gap: 18px; padding: 0 20px 18px; font-size: 12.5px; font-family: 'JetBrains Mono', monospace; color: var(--muted); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; display: inline-block; }
+  .swatch.cyan { background: var(--cyan); }
+  .swatch.magenta { background: var(--magenta); }
+
+  /* ---------- Table ---------- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  thead th {
+    text-align: left;
+    padding: 10px 20px;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12.5px;
+    font-family: 'JetBrains Mono', monospace;
+    border-bottom: 1px solid var(--line);
+  }
+
+  tbody td {
+    padding: 11px 20px;
+    border-bottom: 1px solid rgba(50, 37, 80, 0.5);
+    color: var(--ink);
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: rgba(46, 230, 255, 0.03); }
+
+  .file-cell { font-family: 'JetBrains Mono', monospace; color: var(--cyan); }
+  .region-cell { color: var(--muted); }
+
+  .empty-row td {
+    text-align: center;
+    padding: 34px 20px;
+    color: var(--muted-dim);
+  }
+
+  /* ---------- Controls ---------- */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  button.action {
+    border: 1px solid var(--line-bright);
+    cursor: pointer;
+    padding: 11px 18px;
+    font-weight: 600;
+    font-size: 13.5px;
+    font-family: 'Space Grotesk', sans-serif;
+    background: transparent;
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background .15s ease, color .15s ease, transform .05s ease;
+  }
+  button.action:active { transform: translateY(1px); }
+
+  button.primary {
+    background: var(--cyan);
+    color: #06141a;
+    border-color: var(--cyan);
+  }
+  button.primary:hover { background: #6ff0ff; }
+
+  button.danger {
+    color: var(--magenta);
+  }
+  button.danger:hover { background: rgba(255, 46, 136, 0.1); }
+
+  button.ghost {
+    color: var(--muted);
+  }
+  button.ghost:hover { color: var(--ink); border-color: var(--muted); }
+
+  .footnote {
+    margin-top: 18px;
+    color: var(--muted-dim);
+    font-size: 12.5px;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .footnote a { color: var(--cyan); text-decoration: none; }
+  .footnote a:hover { text-decoration: underline; }
+
+  /* ---------- Toasts ---------- */
+  #toast-region {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+  }
+
+  .toast {
+    background: var(--panel-raised);
+    border: 1px solid var(--line-bright);
+    border-left: 3px solid var(--cyan);
+    padding: 13px 16px;
+    font-size: 13.5px;
+    min-width: 220px;
+    max-width: 320px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: toast-in .18s ease-out;
+  }
+  .toast.error { border-left-color: var(--magenta); }
+  .toast.success { border-left-color: var(--green); }
+
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(6, 4, 14, 0.75);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    padding: 20px;
+  }
+  .modal {
+    background: var(--panel-raised);
+    border: 1px solid var(--magenta);
+    box-shadow: 0 0 40px rgba(255, 46, 136, 0.18);
+    padding: 26px;
+    width: min(380px, 100%);
+  }
+  .modal h3 { margin: 0 0 10px; font-size: 17px; color: var(--ink); }
+  .modal p { margin: 0 0 22px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .modal .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+  [hidden] { display: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dot.pulse { animation: none; }
+    .toast { animation: none; }
+  }
+
+  @media (max-width: 560px) {
+    .panel-head { flex-direction: column; align-items: flex-start; }
+    .footnote { flex-direction: column; }
+  }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Ricochet Download Admin</h1>
 
-    <div class="stats">
-      <div class="card">
-        <div class="label">Visitors</div>
-        <div class="value" id="visits">0</div>
+  <div class="shell">
+    <header>
+      <div class="title-block">
+        <h1>Ricochet <span>/</span> download admin</h1>
+        <p>Statistik pengunjung dan unduhan secara langsung</p>
       </div>
-      <div class="card">
-        <div class="label">Downloads</div>
-        <div class="value magenta" id="downloads">0</div>
+      <div class="status-pill">
+        <span class="dot pulse" id="statusDot"></span>
+        <span id="statusText">terhubung ke /api/stats</span>
       </div>
+    </header>
+
+    <section class="stats" aria-label="Ringkasan statistik">
+      <div class="stat-card">
+        <div class="label">Pengunjung</div>
+        <div class="value" id="visits">–</div>
+        <div class="delta" id="visitsDelta"></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Unduhan</div>
+        <div class="value magenta" id="downloads">–</div>
+        <div class="delta" id="downloadsDelta"></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Rasio konversi</div>
+        <div class="value amber" id="conversion">–</div>
+        <div class="delta" id="conversionNote">unduhan / pengunjung</div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Tren 14 hari terakhir">
+      <div class="panel-head">
+        <h2>Tren 14 hari terakhir</h2>
+        <div class="range-toggle" role="group" aria-label="Rentang waktu grafik">
+          <button data-range="7" id="range7">7 hari</button>
+          <button data-range="14" class="active" id="range14">14 hari</button>
+          <button data-range="30" id="range30">30 hari</button>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <svg class="trend" id="trendChart" viewBox="0 0 800 220" preserveAspectRatio="none" role="img" aria-label="Grafik tren pengunjung dan unduhan"></svg>
+      </div>
+      <div class="legend">
+        <span><i class="swatch cyan"></i> Pengunjung</span>
+        <span><i class="swatch magenta"></i> Unduhan</span>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Log unduhan terbaru">
+      <div class="panel-head">
+        <h2>Unduhan terbaru</h2>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Waktu</th>
+            <th scope="col">Berkas</th>
+            <th scope="col">Wilayah</th>
+            <th scope="col">Versi</th>
+          </tr>
+        </thead>
+        <tbody id="logBody">
+          <tr class="empty-row"><td colspan="4">Memuat log…</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="controls">
+      <button class="action primary" id="refreshBtn">Segarkan data</button>
+      <button class="action ghost" id="exportBtn">Ekspor CSV</button>
+      <button class="action danger" id="resetBtn">Reset counter</button>
+      <span class="footnote" style="margin:0;" id="autoRefreshNote">memperbarui otomatis dalam 30s</span>
     </div>
 
-    <div class="panel">
-      <button id="refreshBtn">Refresh data</button>
-      <button id="resetBtn" class="secondary">Reset counter</button>
-    </div>
-
-    <div class="small">
-      Public page: <a href="/">/</a> &nbsp;|&nbsp; API: <a href="/api/stats">/api/stats</a>
+    <div class="footnote">
+      <span>Halaman publik: <a href="/">/</a> &nbsp;·&nbsp; API: <a href="/api/stats">/api/stats</a></span>
+      <span id="lastUpdated">belum dimuat</span>
     </div>
   </div>
 
-  <script>
-    async function fetchJson(url, options = {}) {
-      const response = await fetch(url, options);
-      if (!response.ok) throw new Error('Request failed: ' + response.status);
-      return response.json();
+  <div id="toast-region" aria-live="polite"></div>
+
+  <div class="modal-backdrop" id="resetModal" hidden>
+    <div class="modal" role="alertdialog" aria-labelledby="resetModalTitle" aria-describedby="resetModalDesc">
+      <h3 id="resetModalTitle">Reset semua statistik?</h3>
+      <p id="resetModalDesc">Tindakan ini akan mengembalikan pengunjung dan unduhan ke nol. Tidak dapat dibatalkan.</p>
+      <div class="modal-actions">
+        <button class="action ghost" id="cancelReset">Batal</button>
+        <button class="action danger" id="confirmReset" style="border-color:var(--magenta)">Ya, reset</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  const AUTO_REFRESH_SECONDS = 30;
+  let usingDemoData = false;
+  let currentRange = 14;
+  let history = [];   // [{date, visits, downloads}]
+  let logs = [];       // [{time, file, region, version}]
+  let lastVisits = 0, lastDownloads = 0;
+
+  // ---------- utilities ----------
+  function fmt(n) { return Number(n || 0).toLocaleString('id-ID'); }
+
+  function toast(message, kind) {
+    const region = document.getElementById('toast-region');
+    const el = document.createElement('div');
+    el.className = 'toast' + (kind ? ' ' + kind : '');
+    el.textContent = message;
+    region.appendChild(el);
+    setTimeout(() => el.remove(), 4200);
+  }
+
+  async function fetchJson(url, options) {
+    const response = await fetch(url, options || {});
+    if (!response.ok) throw new Error('Request failed: ' + response.status);
+    return response.json();
+  }
+
+  // ---------- demo data fallback ----------
+  function generateDemoHistory(days) {
+    const out = [];
+    let v = 800 + Math.random() * 200;
+    let d = 120 + Math.random() * 40;
+    const today = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      v += (Math.random() - 0.45) * 80;
+      d += (Math.random() - 0.45) * 18;
+      v = Math.max(40, v);
+      d = Math.max(5, d);
+      const dt = new Date(today);
+      dt.setDate(today.getDate() - i);
+      out.push({
+        date: dt.toISOString().slice(0, 10),
+        visits: Math.round(v),
+        downloads: Math.round(d)
+      });
+    }
+    return out;
+  }
+
+  function generateDemoLogs() {
+    const files = ['ricochet-1.4.2-win64.exe', 'ricochet-1.4.2-macos.dmg', 'ricochet-1.4.2-linux.AppImage', 'ricochet-1.4.1-win64.exe'];
+    const regions = ['ID · Yogyakarta', 'ID · Jakarta', 'SG · Singapore', 'DE · Frankfurt', 'US · Ashburn'];
+    const out = [];
+    const now = Date.now();
+    for (let i = 0; i < 8; i++) {
+      const t = new Date(now - i * (1000 * 60 * (12 + Math.random() * 90)));
+      out.push({
+        time: t,
+        file: files[Math.floor(Math.random() * files.length)],
+        region: regions[Math.floor(Math.random() * regions.length)],
+        version: 'v' + (Math.random() > 0.3 ? '1.4.2' : '1.4.1')
+      });
+    }
+    return out;
+  }
+
+  function relativeTime(date) {
+    const diffMs = Date.now() - date.getTime();
+    const mins = Math.round(diffMs / 60000);
+    if (mins < 1) return 'baru saja';
+    if (mins < 60) return mins + ' menit lalu';
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs + ' jam lalu';
+    return Math.round(hrs / 24) + ' hari lalu';
+  }
+
+  // ---------- rendering ----------
+  function renderStats(stats) {
+    const visits = Number(stats.visits || 0);
+    const downloads = Number(stats.downloads || 0);
+    document.getElementById('visits').textContent = fmt(visits);
+    document.getElementById('downloads').textContent = fmt(downloads);
+
+    const conv = visits > 0 ? (downloads / visits) * 100 : 0;
+    document.getElementById('conversion').textContent = conv.toFixed(1) + '%';
+
+    if (lastVisits) {
+      const dv = visits - lastVisits;
+      const el = document.getElementById('visitsDelta');
+      el.textContent = (dv >= 0 ? '+' : '') + fmt(dv) + ' sejak refresh terakhir';
+      el.className = 'delta' + (dv < 0 ? ' down' : '');
+    }
+    if (lastDownloads) {
+      const dd = downloads - lastDownloads;
+      const el = document.getElementById('downloadsDelta');
+      el.textContent = (dd >= 0 ? '+' : '') + fmt(dd) + ' sejak refresh terakhir';
+      el.className = 'delta' + (dd < 0 ? ' down' : '');
+    }
+    lastVisits = visits;
+    lastDownloads = downloads;
+  }
+
+  function renderChart() {
+    const svg = document.getElementById('trendChart');
+    const slice = history.slice(-currentRange);
+    if (!slice.length) { svg.innerHTML = ''; return; }
+
+    const W = 800, H = 220, padL = 36, padR = 10, padT = 14, padB = 24;
+    const innerW = W - padL - padR, innerH = H - padT - padB;
+
+    const maxVisits = Math.max(...slice.map(d => d.visits), 1);
+    const maxDownloads = Math.max(...slice.map(d => d.downloads), 1);
+    const maxVal = Math.max(maxVisits, maxDownloads * (maxVisits / Math.max(maxDownloads, 1)));
+
+    const x = i => padL + (innerW * i) / Math.max(slice.length - 1, 1);
+    const yFor = max => v => padT + innerH - (innerH * v) / (max || 1);
+    const yVisits = yFor(maxVisits);
+    const yDownloads = yFor(maxDownloads);
+
+    const linePath = (arr, yFn) => arr.map((d, i) => (i === 0 ? 'M' : 'L') + x(i).toFixed(1) + ' ' + yFn(d).toFixed(1)).join(' ');
+    const visitsPath = linePath(slice.map(d => d.visits), yVisits);
+    const downloadsPath = linePath(slice.map(d => d.downloads), yDownloads);
+    const areaPath = visitsPath + ' L' + x(slice.length - 1).toFixed(1) + ' ' + (padT + innerH) + ' L' + x(0).toFixed(1) + ' ' + (padT + innerH) + ' Z';
+
+    let gridLines = '';
+    for (let g = 0; g <= 3; g++) {
+      const gy = padT + (innerH * g) / 3;
+      gridLines += `<line class="grid-line" x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" />`;
     }
 
-    function renderStats(stats) {
-      document.getElementById('visits').textContent = Number(stats.visits || 0).toLocaleString();
-      document.getElementById('downloads').textContent = Number(stats.downloads || 0).toLocaleString();
-    }
-
-    async function loadStats() {
-      try {
-        const stats = await fetchJson('/api/stats');
-        renderStats(stats);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    document.getElementById('refreshBtn').addEventListener('click', loadStats);
-    document.getElementById('resetBtn').addEventListener('click', async () => {
-      if (!confirm('Reset semua statistik download?')) return;
-      try {
-        const result = await fetchJson('/api/reset', { method: 'POST' });
-        renderStats(result.stats);
-      } catch (e) {
-        console.error(e);
+    const step = Math.max(1, Math.round(slice.length / 6));
+    let labels = '';
+    slice.forEach((d, i) => {
+      if (i % step === 0 || i === slice.length - 1) {
+        const label = d.date.slice(5);
+        labels += `<text class="axis-label" x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle">${label}</text>`;
       }
     });
 
-    loadStats();
-  </script>
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="areaFade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2ee6ff" stop-opacity="0.35" />
+          <stop offset="100%" stop-color="#2ee6ff" stop-opacity="0" />
+        </linearGradient>
+      </defs>
+      ${gridLines}
+      <path class="trend-area" d="${areaPath}" />
+      <path class="trend-visits" d="${visitsPath}" />
+      <path class="trend-downloads" d="${downloadsPath}" />
+      ${labels}
+    `;
+  }
+
+  function renderLogs() {
+    const body = document.getElementById('logBody');
+    if (!logs.length) {
+      body.innerHTML = '<tr class="empty-row"><td colspan="4">Belum ada aktivitas unduhan.</td></tr>';
+      return;
+    }
+    body.innerHTML = logs.slice(0, 8).map(l => `
+      <tr>
+        <td class="mono">${relativeTime(l.time)}</td>
+        <td class="file-cell">${l.file}</td>
+        <td class="region-cell">${l.region}</td>
+        <td class="mono">${l.version}</td>
+      </tr>
+    `).join('');
+  }
+
+  function setConnectionStatus(online) {
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    dot.className = 'dot pulse' + (online ? '' : ' offline');
+    text.textContent = online ? 'terhubung ke /api/stats' : 'mode demo — API tidak terjangkau';
+  }
+
+  // ---------- data loading ----------
+  async function loadStats() {
+    try {
+      const stats = await fetchJson('/api/stats');
+      usingDemoData = false;
+      setConnectionStatus(true);
+      renderStats(stats);
+      if (stats.history) { history = stats.history; renderChart(); }
+      if (stats.logs) { logs = stats.logs.map(l => ({ ...l, time: new Date(l.time) })); renderLogs(); }
+      document.getElementById('lastUpdated').textContent = 'diperbarui ' + new Date().toLocaleTimeString('id-ID');
+      return true;
+    } catch (e) {
+      // fall back to demo data so the dashboard is still usable/previewable
+      usingDemoData = true;
+      setConnectionStatus(false);
+      if (!history.length) history = generateDemoHistory(30);
+      if (!logs.length) logs = generateDemoLogs();
+      const latest = history[history.length - 1];
+      renderStats({ visits: history.reduce((a, d) => a + d.visits, 0), downloads: history.reduce((a, d) => a + d.downloads, 0) });
+      renderChart();
+      renderLogs();
+      document.getElementById('lastUpdated').textContent = 'diperbarui ' + new Date().toLocaleTimeString('id-ID') + ' (demo)';
+      return false;
+    }
+  }
+
+  function exportCsv() {
+    if (!history.length) { toast('Tidak ada data untuk diekspor', 'error'); return; }
+    const rows = [['tanggal', 'pengunjung', 'unduhan'], ...history.map(d => [d.date, d.visits, d.downloads])];
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ricochet-stats.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV berhasil diunduh', 'success');
+  }
+
+  async function doReset() {
+    try {
+      const result = await fetchJson('/api/reset', { method: 'POST' });
+      renderStats(result.stats || { visits: 0, downloads: 0 });
+      toast('Statistik berhasil direset', 'success');
+    } catch (e) {
+      if (usingDemoData) {
+        history = history.map(d => ({ ...d, visits: 0, downloads: 0 }));
+        logs = [];
+        renderStats({ visits: 0, downloads: 0 });
+        renderChart();
+        renderLogs();
+        toast('Direset (mode demo — tidak tersambung ke API)', 'success');
+      } else {
+        toast('Gagal reset: periksa koneksi API', 'error');
+      }
+    }
+  }
+
+  // ---------- auto refresh ----------
+  let countdown = AUTO_REFRESH_SECONDS;
+  function tickCountdown() {
+    countdown -= 1;
+    if (countdown <= 0) {
+      loadStats();
+      countdown = AUTO_REFRESH_SECONDS;
+    }
+    document.getElementById('autoRefreshNote').textContent = `memperbarui otomatis dalam ${countdown}s`;
+  }
+  setInterval(tickCountdown, 1000);
+
+  // ---------- events ----------
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    loadStats().then(ok => toast(ok ? 'Data diperbarui' : 'API tidak terjangkau — memuat data demo', ok ? 'success' : 'error'));
+    countdown = AUTO_REFRESH_SECONDS;
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', exportCsv);
+
+  const resetModal = document.getElementById('resetModal');
+  document.getElementById('resetBtn').addEventListener('click', () => { resetModal.hidden = false; document.getElementById('cancelReset').focus(); });
+  document.getElementById('cancelReset').addEventListener('click', () => { resetModal.hidden = true; });
+  document.getElementById('confirmReset').addEventListener('click', () => { resetModal.hidden = true; doReset(); });
+  resetModal.addEventListener('click', (e) => { if (e.target === resetModal) resetModal.hidden = true; });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !resetModal.hidden) resetModal.hidden = true; });
+
+  ['range7', 'range14', 'range30'].forEach(id => {
+    document.getElementById(id).addEventListener('click', (e) => {
+      document.querySelectorAll('.range-toggle button').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      currentRange = Number(e.target.dataset.range);
+      renderChart();
+    });
+  });
+
+  loadStats();
+})();
+</script>
 </body>
 </html>
