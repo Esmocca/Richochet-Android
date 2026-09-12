@@ -83,7 +83,6 @@ function textWidth(ctx, text, size) {
     return ctx.measureText(text).width;
 }
 
-// ─── Ball Class ──────────────────────────────────────
 class Ball {
     constructor(x, y, vx, vy, radius) {
         this.x = x;
@@ -120,7 +119,7 @@ class Game {
 
         // Settings
         this.volume = 50;
-        this.difficulty = 1; // 0: Easy, 1: Normal, 2: Hard
+        this.difficulty = 1; // set on normal difficulty
         this.difficulties = ['EASY', 'NORMAL', 'HARD'];
         this.highScore = 0;
 
@@ -187,7 +186,7 @@ class Game {
 
         // Level Start
         this.levelStartTimer = 0;
-        this.levelStartPhase = 0; // 0=stage name, 1=READY, 2=GO
+        this.levelStartPhase = 0; 
 
         // Starfield (parallax layers)
         this.starLayers = [];
