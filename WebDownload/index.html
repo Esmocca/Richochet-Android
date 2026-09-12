@@ -570,7 +570,7 @@ document.getElementById('footYear').textContent = '© ' + new Date().getFullYear
   if (downloadBtn) {
     downloadBtn.addEventListener('click', async function(event){
       try {
-        const stats = await fetchJson('/api/track/download');
+        const stats = await fetchJson('/api/track/download?file=ricochet-arcade.apk');
         downloadEl.textContent = fmt(stats.downloads || 0);
         return true;
       } catch (error) {
