@@ -101,13 +101,11 @@ class Game {
         this.ctx = canvas.getContext('2d');
         this.audio = new AudioManager();
 
-        // State
         this.state = GameState.Menu;
         this.menuSelectedIndex = 0;
         this.optionSelectedIndex = 0;
         this.pauseSelectedIndex = 0;
 
-        // Paddle Colors
         this.paddleColors = [
             { label: 'BLUE', color: [0, 180, 255] },
             { label: 'ORANGE', color: [255, 110, 0] },
@@ -117,19 +115,16 @@ class Game {
         ];
         this.selectedColorIndex = 0;
 
-        // Settings
         this.volume = 50;
         this.difficulty = 1; // set on normal difficulty
         this.difficulties = ['EASY', 'NORMAL', 'HARD'];
         this.highScore = 0;
 
-        // Physics
         this.baseSpeed = 130;
         this.currentSpeed = 130;
         this.maxSpeed = 350;
         this.speedMultiplier = 1.0;
 
-        // Paddle
         this.paddleWidth = 36;
         this.basePaddleWidth = 36;
         this.paddleHeight = 6;
@@ -137,14 +132,11 @@ class Game {
         this.paddleY = 223;
         this.paddleBounceTimer = 0.3;
 
-        // Multi-ball system
         this.balls = [];
 
-        // Bricks
         this.bricks = [];
         this.brickSpawnTimer = 0;
 
-        // Score & Time
         this.score = 0;
         this.elapsedTime = 0;
         this.lives = 3;
