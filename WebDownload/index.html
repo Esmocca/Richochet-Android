@@ -146,7 +146,6 @@
   }
   @keyframes bob{ 0%,100%{transform:translate(-50%,0);} 50%{transform:translate(-50%,8px);} }
 
-  /* ---------- STAT TICKER ---------- */
   .ticker{
     border-bottom:2px solid var(--line);
     background:var(--bg-panel);
@@ -168,7 +167,6 @@
   .stat.cyan .num{ color:var(--cyan); text-shadow:0 0 10px rgba(46,230,255,0.55); }
   .stat.magenta .num{ color:var(--magenta); text-shadow:0 0 10px rgba(255,46,136,0.55); }
 
-  /* ---------- SECTIONS ---------- */
   section{ padding:80px 6vw; max-width:1000px; margin:0 auto; }
   .panel{
     background:var(--bg-panel);
@@ -254,7 +252,6 @@
     }
   }
 
-  /* ---------- SUPPORT / TRAKTEER ---------- */
   .support{
     text-align:center;
     border-top:2px solid var(--line);
@@ -266,8 +263,7 @@
   }
   .support h2{ font-size:clamp(18px,3vw,26px); margin-bottom:14px; }
   .support p{ margin:0 auto 26px; }
-
-  /* ---------- FOOTER ---------- */
+  
   footer{
     padding:50px 6vw 70px;
     text-align:center;
@@ -285,7 +281,6 @@
 </head>
 <body>
 
-  <!-- ================= HERO ================= -->
   <section class="hero crt" aria-label="Ricochet Arcade intro">
     <canvas id="bgCanvas"></canvas>
     <div class="hero-veil"></div>
@@ -302,7 +297,6 @@
     <div class="scroll-cue">▼ SCROLL ▼</div>
   </section>
 
-  <!-- ================= LIVE STATS ================= -->
   <div class="ticker" aria-label="Statistik pengunjung">
     <div class="stat cyan">
       <div class="num" id="visitCount">000000</div>
@@ -318,7 +312,7 @@
     </div>
   </div>
 
-  <!-- ================= ABOUT ================= -->
+
   <section>
     <div class="panel">
       <h2 class="section-title"><span class="dot">■</span> RICOCHET ARCADE</h2>
@@ -326,7 +320,6 @@
     </div>
   </section>
 
-  <!-- ================= RULES ================= -->
   <section>
     <div class="two-col">
       <div class="panel">
@@ -350,7 +343,6 @@
     </div>
   </section>
 
-  <!-- ================= TECH STACK ================= -->
   <section>
     <div class="panel">
       <h2 class="section-title"><span class="dot">■</span> TECH STACK</h2>
@@ -363,14 +355,12 @@
     </div>
   </section>
 
-  <!-- ================= SUPPORT ================= -->
   <section class="support" style="max-width:none;">
     <h2 class="pixel">ENJOYING THE GAME?</h2>
     <p>Ricochet Arcade is made independently by Esmoocca. If you'd like to support future updates and new stages, buy me a coffee.</p>
     <a class="btn amber" href="https://trakteer.id/esmoocca" target="_blank" rel="noopener">☕ SUPPORT ON TRAKTEER</a>
   </section>
 
-  <!-- ================= FOOTER ================= -->
   <footer>
     <div class="brand"><em>ESMOOCCA</em> PRODUCTION</div>
     <div>Ricochet Arcade for Android · Built with HTML5 Canvas, Capacitor &amp; a lot of coffee.</div>
@@ -378,10 +368,9 @@
   </footer>
 
 <script>
-/* ============ FOOTER YEAR ============ */
+
 document.getElementById('footYear').textContent = '© ' + new Date().getFullYear() + ' Esmoocca. All rights reserved.';
 
-/* ============ BACKGROUND GAMEPLAY ANIMATION (decorative, non-interactive, auto-play) ============ */
 (function(){
   const canvas = document.getElementById('bgCanvas');
   const ctx = canvas.getContext('2d');
@@ -434,7 +423,7 @@ document.getElementById('footYear').textContent = '© ' + new Date().getFullYear
   }
 
   function step(){
-    // paddle "AI" follows the ball with easing (auto-play, no user input)
+
     const targetX = ball.x - paddle.w/2;
     paddle.x += (targetX - paddle.x) * 0.06;
     paddle.x = Math.max(6, Math.min(W - paddle.w - 6, paddle.x));
@@ -446,7 +435,6 @@ document.getElementById('footYear').textContent = '© ' + new Date().getFullYear
     if(ball.x + ball.r > W){ ball.x = W - ball.r; ball.vx *= -1; }
     if(ball.y - ball.r < 0){ ball.y = ball.r; ball.vy *= -1; }
 
-    // paddle collision
     if(ball.y + ball.r >= paddle.y && ball.y + ball.r <= paddle.y + paddle.h + 8 &&
        ball.x >= paddle.x - 6 && ball.x <= paddle.x + paddle.w + 6 && ball.vy > 0){
       const hit = (ball.x - (paddle.x + paddle.w/2)) / (paddle.w/2);
@@ -455,7 +443,7 @@ document.getElementById('footYear').textContent = '© ' + new Date().getFullYear
       ball.y = paddle.y - ball.r;
     }
 
-    // brick collisions
+
     let aliveCount = 0;
     for(const b of bricks){
       if(!b.alive) continue;
@@ -469,14 +457,12 @@ document.getElementById('footYear').textContent = '© ' + new Date().getFullYear
     }
     if(aliveCount === 0) setupBricks();
 
-    // ball fell past paddle -> respawn (endless demo loop)
     if(ball.y - ball.r > H){ resetBall(); }
   }
 
   function draw(){
     ctx.clearRect(0,0,W,H);
 
-    // bricks
     for(const b of bricks){
       if(!b.alive) continue;
       ctx.fillStyle = b.color;
