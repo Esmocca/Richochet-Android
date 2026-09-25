@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -28,7 +30,8 @@
             user-select: none;
         }
 
-        html, body {
+        html,
+        body {
             width: 100%;
             height: 100%;
             overflow: hidden;
@@ -52,52 +55,68 @@
 
         /* Virtual Buttons Overlay */
         #controls {
+            --btn-scale: 1;
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             height: 80px;
-            display: none; /* shown only during gameplay */
+            display: none;
+            /* shown only during gameplay */
             z-index: 10;
             pointer-events: none;
         }
 
         .ctrl-btn {
             position: absolute;
-            bottom: 10px;
-            width: 100px;
-            height: 60px;
-            background: rgba(0, 180, 255, 0.15);
-            border: 2px solid rgba(0, 180, 255, 0.4);
-            border-radius: 12px;
+            bottom: 20px;
+            width: calc(70px * var(--btn-scale));
+            height: calc(70px * var(--btn-scale));
+            background: url('img/nav_btn.png') center/cover no-repeat;
+            border-radius: 50%;
+            pointer-events: auto;
+            transition: transform 0.1s, opacity 0.1s, width 0.2s, height 0.2s;
+            opacity: 0.5;
+            /* Hide the text */
+            color: transparent;
+            font-size: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'PixelFont', monospace;
-            font-size: 28px;
-            color: rgba(0, 220, 255, 0.7);
-            pointer-events: auto;
-            transition: background 0.1s;
         }
 
-        .ctrl-btn:active, .ctrl-btn.active {
-            background: rgba(0, 180, 255, 0.35);
-            border-color: rgba(0, 220, 255, 0.8);
-            color: rgba(0, 255, 255, 1.0);
+        .ctrl-btn:active,
+        .ctrl-btn.active {
+            opacity: 0.7;
         }
 
         #btnLeft {
-            left: 15px;
+            left: 20px;
+            transform: rotate(-90deg);
+        }
+
+        #btnLeft:active,
+        #btnLeft.active {
+            transform: rotate(-90deg) scale(1.1);
         }
 
         #btnRight {
-            right: 15px;
+            right: 20px;
+            transform: rotate(90deg);
+        }
+
+        #btnRight:active,
+        #btnRight.active {
+            transform: rotate(90deg) scale(1.1);
         }
 
         /* ─── Loading Screen ─── */
         #loading {
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background: #0c0e18;
             display: flex;
             flex-direction: column;
@@ -114,14 +133,15 @@
         #loading::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 255, 255, 0.02) 2px,
-                rgba(0, 255, 255, 0.02) 4px
-            );
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 255, 255, 0.02) 2px,
+                    rgba(0, 255, 255, 0.02) 4px);
             pointer-events: none;
             z-index: 1;
         }
@@ -134,24 +154,27 @@
             left: 0;
             right: 0;
             height: 200%;
-            background: linear-gradient(
-                180deg,
-                transparent 0%,
-                transparent 45%,
-                rgba(0, 255, 255, 0.08) 48%,
-                rgba(0, 255, 255, 0.15) 50%,
-                rgba(0, 255, 255, 0.08) 52%,
-                transparent 55%,
-                transparent 100%
-            );
+            background: linear-gradient(180deg,
+                    transparent 0%,
+                    transparent 45%,
+                    rgba(0, 255, 255, 0.08) 48%,
+                    rgba(0, 255, 255, 0.15) 50%,
+                    rgba(0, 255, 255, 0.08) 52%,
+                    transparent 55%,
+                    transparent 100%);
             animation: neonSweep 2.5s ease-in-out infinite;
             pointer-events: none;
             z-index: 2;
         }
 
         @keyframes neonSweep {
-            0% { transform: translateY(-20%); }
-            100% { transform: translateY(70%); }
+            0% {
+                transform: translateY(-20%);
+            }
+
+            100% {
+                transform: translateY(70%);
+            }
         }
 
         .loading-content {
@@ -176,10 +199,28 @@
         }
 
         @keyframes glitchTitle {
-            0%, 95%, 100% { transform: translate(0, 0); opacity: 1; }
-            96% { transform: translate(-3px, 1px); opacity: 0.9; }
-            97% { transform: translate(2px, -1px); opacity: 1; }
-            98% { transform: translate(-1px, 0); opacity: 0.95; }
+
+            0%,
+            95%,
+            100% {
+                transform: translate(0, 0);
+                opacity: 1;
+            }
+
+            96% {
+                transform: translate(-3px, 1px);
+                opacity: 0.9;
+            }
+
+            97% {
+                transform: translate(2px, -1px);
+                opacity: 1;
+            }
+
+            98% {
+                transform: translate(-1px, 0);
+                opacity: 0.95;
+            }
         }
 
         .logo-subtitle {
@@ -225,19 +266,25 @@
         .progress-bar::after {
             content: '';
             position: absolute;
-            top: 0; left: -50%; right: -50%; bottom: 0;
-            background: linear-gradient(
-                90deg,
-                transparent 0%,
-                rgba(255, 255, 255, 0.3) 50%,
-                transparent 100%
-            );
+            top: 0;
+            left: -50%;
+            right: -50%;
+            bottom: 0;
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    rgba(255, 255, 255, 0.3) 50%,
+                    transparent 100%);
             animation: shimmer 1.5s ease-in-out infinite;
         }
 
         @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
         }
 
         .loading-footer {
@@ -247,16 +294,24 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
         }
     </style>
 </head>
+
 <body>
     <div id="loading">
         <div class="loading-content">
-            <div class="logo-text">RICOCHET</div>
-            <div class="logo-subtitle">ARCADE HD</div>
+            <img src="img/arcoster_logo.png" alt="ARCOSTER"
+                style="max-width: 250px; margin-bottom: 20px; mix-blend-mode: screen;">
             <div id="loadingMessages">INITIALIZING QUANTUM CORE...</div>
             <div class="progress-container">
                 <div id="progressBar" class="progress-bar"></div>
@@ -265,7 +320,7 @@
         </div>
     </div>
     <script>
-        (function() {
+        (function () {
             var bar = document.getElementById('progressBar');
             var msg = document.getElementById('loadingMessages');
             var p = 0;
@@ -277,15 +332,15 @@
                 'ESTABLISHING NEURAL LINK...',
                 'READY TO LAUNCH!'
             ];
-            var timer = setInterval(function() {
+            var timer = setInterval(function () {
                 p += Math.random() * 18 + 5;
                 if (p >= 100) {
                     p = 100;
                     clearInterval(timer);
-                    setTimeout(function() {
+                    setTimeout(function () {
                         var el = document.getElementById('loading');
                         if (el) el.style.opacity = '0';
-                        setTimeout(function() { if (el) el.style.display = 'none'; }, 600);
+                        setTimeout(function () { if (el) el.style.display = 'none'; }, 600);
                     }, 300);
                 }
                 if (bar) bar.style.width = p + '%';
@@ -307,4 +362,5 @@
     <script src="js/audio.js"></script>
     <script src="js/game.js"></script>
 </body>
+
 </html>

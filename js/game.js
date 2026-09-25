@@ -2,11 +2,11 @@
 // Game By: Esmoocca
 // Beta Test Version enchanted ui and stages
 
-const GameState = { Menu: 0, Options: 1, Playing: 2, StageClear: 3, GameOver: 4, Paused: 5 };
+const GameState = { Menu: 0, Options: 1, Playing: 2, StageClear: 3, GameOver: 4, Paused: 5, Shop: 6 };
 
 const V_WIDTH = 320;
 const V_HEIGHT = 240;
-const PLAY_AREA_WIDTH = 250;
+const PLAY_AREA_WIDTH = V_WIDTH;
 
 function rgba(r, g, b, a = 255) {
     return `rgba(${r},${g},${b},${a / 255})`;
@@ -139,7 +139,8 @@ class Game {
 
         this.score = 0;
         this.elapsedTime = 0;
-        this.lives = 3;
+        this.extraLives = 0;
+        this.lives = 3 + this.extraLives;
         this.currentLevel = 0;
 
         // Decorative menu bricks
@@ -191,6 +192,29 @@ class Game {
 
         // Overlay anim timer
         this.overlayTimer = 0;
+
+        // Coins (persistent)
+        this.coins = 0;
+        this.coinDrops = [];
+
+        // Companions
+        this.companions = [
+            { id: 'linear', name: 'BLITZ', desc: 'Straight projectiles', price: 50, type: 'linear', owned: false, equipped: false, color: [0, 255, 200] },
+            { id: 'zigzag', name: 'ZAPPY', desc: 'Zigzag projectiles', price: 75, type: 'zigzag', owned: false, equipped: false, color: [255, 200, 0] },
+            { id: 'side', name: 'FLANKER', desc: 'Left & Right shots', price: 100, type: 'side', owned: false, equipped: false, color: [255, 80, 200] }
+        ];
+        this.equippedCompanion = null;
+        this.companionProjectiles = [];
+        this.companionFireTimer = 0;
+        this.companionFireRate = 1.5;
+
+        // Shop
+        this.shopSelectedIndex = 0;
+        this.shopFirstVisit = true;
+        this.shopAssistantStep = 0;
+        this.shopAssistantTimer = 0;
+        this.shopCelloAnimTimer = 0;
+        this.shopCelloVisible = false;
 
         // Input
         this.keys = {};
@@ -374,83 +398,81 @@ class Game {
                     [255, 120, 180]
                 ]
             },
-            // Level 2: Diamond (Stage 02 - Electric Cyber Blue Diamond)
+            // Level 2: Diamond (Stage 02)
             {
                 data: [
-                    [0, 0, 0, 0, 1, 0, 0, 0, 0],
-                    [0, 0, 0, 1, 2, 1, 0, 0, 0],
-                    [0, 0, 1, 2, 3, 2, 1, 0, 0],
-                    [0, 1, 2, 3, 4, 3, 2, 1, 0],
-                    [1, 2, 3, 4, 4, 4, 3, 2, 1],
-                    [0, 1, 2, 3, 4, 3, 2, 1, 0],
-                    [0, 0, 1, 2, 3, 2, 1, 0, 0],
-                    [0, 0, 0, 1, 2, 1, 0, 0, 0],
-                    [0, 0, 0, 0, 1, 0, 0, 0, 0]
+                    [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+                    [0, 1, 2, 2, 1, 2, 1, 2, 2, 1, 0],
+                    [1, 2, 2, 2, 1, 2, 1, 2, 2, 2, 1],
+                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    [0, 1, 2, 2, 1, 2, 1, 2, 2, 1, 0],
+                    [0, 0, 1, 2, 1, 2, 1, 2, 1, 0, 0],
+                    [0, 0, 0, 1, 1, 2, 1, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
                 ],
                 colors: [
-                    [0, 230, 255],  // 1: Electric Cyan border
-                    [0, 160, 255],  // 2: Vibrant Blue
-                    [30, 90, 245],  // 3: Royal Blue
-                    [180, 240, 255] // 4: Ice White Core
+                    [20, 200, 255],  // 1: Lines/Edges (Cyan)
+                    [200, 240, 255]  // 2: Body (Ice White/Light Blue)
                 ]
             },
-            // Level 3: Space Invader (Stage 03 - Multi-Color Row Neon Gradation)
+            // Level 3: Flame (Stage 03)
             {
                 data: [
-                    [0, 0, 1, 0, 0, 0, 1, 0, 0], // Row 0: Antennae (Cyber Green)
-                    [0, 0, 0, 2, 0, 2, 0, 0, 0], // Row 1: Stems (Cyan)
-                    [0, 0, 3, 3, 3, 3, 3, 0, 0], // Row 2: Crown (Electric Blue)
-                    [0, 4, 4, 5, 4, 5, 4, 4, 0], // Row 3: Visor & Glowing Eyes (Neon Pink/Yellow)
-                    [6, 6, 6, 6, 6, 6, 6, 6, 6], // Row 4: Shoulders (Purple)
-                    [7, 0, 7, 7, 7, 7, 7, 0, 7], // Row 5: Ribs (Deep Magenta)
-                    [8, 0, 8, 0, 0, 0, 8, 0, 8], // Row 6: Legs (Hot Pink)
-                    [0, 0, 0, 9, 0, 9, 0, 0, 0]  // Row 7: Feet (Bright Orange)
+                    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 2, 2, 2, 1, 0, 0, 0],
+                    [0, 0, 1, 2, 2, 2, 2, 2, 1, 0, 0],
+                    [0, 1, 2, 2, 2, 1, 1, 2, 2, 1, 0],
+                    [1, 2, 2, 2, 1, 0, 0, 1, 2, 2, 1],
+                    [1, 2, 2, 2, 1, 0, 0, 1, 2, 2, 1],
+                    [1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 1],
+                    [0, 1, 1, 2, 2, 2, 2, 2, 1, 1, 0],
+                    [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0]
                 ],
                 colors: [
-                    [0, 255, 180],   // 1: Cyber Green
-                    [0, 220, 255],   // 2: Cyan
-                    [0, 140, 255],   // 3: Electric Blue
-                    [255, 50, 180],  // 4: Neon Pink
-                    [255, 230, 0],   // 5: Yellow Eyes
-                    [170, 40, 255],  // 6: Purple
-                    [220, 30, 200],  // 7: Deep Magenta
-                    [255, 60, 120],  // 8: Hot Pink
-                    [255, 120, 0]    // 9: Bright Orange
+                    [255, 60, 0],   // 1: Outer Red-Orange
+                    [255, 160, 0]   // 2: Inner Orange-Yellow
                 ]
             },
-            // Level 4: Pyramid (Stage 04 - Emerald/Gold Gradient)
+            // Level 4: Star (Stage 04)
             {
                 data: [
-                    [0, 0, 0, 0, 1, 0, 0, 0, 0],
-                    [0, 0, 0, 2, 2, 2, 0, 0, 0],
-                    [0, 0, 3, 3, 3, 3, 3, 0, 0],
-                    [0, 4, 4, 4, 4, 4, 4, 4, 0],
-                    [5, 5, 5, 5, 5, 5, 5, 5, 5]
+                    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0],
+                    [1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1],
+                    [0, 1, 2, 2, 2, 2, 2, 2, 2, 1, 0],
+                    [0, 0, 1, 2, 2, 2, 2, 2, 1, 0, 0],
+                    [0, 0, 0, 1, 2, 2, 2, 1, 0, 0, 0],
+                    [0, 0, 1, 2, 2, 1, 2, 2, 1, 0, 0],
+                    [0, 1, 2, 2, 1, 0, 1, 2, 2, 1, 0],
+                    [1, 2, 1, 1, 0, 0, 0, 1, 1, 2, 1],
+                    [1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1]
                 ],
                 colors: [
-                    [255, 220, 0],   // 1: Gold Capstone
-                    [255, 170, 0],   // 2: Amber
-                    [0, 230, 140],   // 3: Emerald
-                    [0, 200, 200],   // 4: Cyan
-                    [0, 150, 255]    // 5: Deep Blue
+                    [255, 150, 0],   // 1: Gold/Dark Yellow
+                    [255, 230, 0]    // 2: Bright Yellow
                 ]
             },
-            // Level 5: Fortress (Stage 05 - Steel Blue & Ruby Contrast)
+            // Level 5: Skull (Stage 05)
             {
                 data: [
-                    [1, 1, 1, 1, 1, 1, 1, 1, 1],
-                    [2, 2, 2, 2, 2, 2, 2, 2, 2],
-                    [2, 3, 0, 0, 3, 0, 0, 3, 2],
-                    [2, 3, 3, 3, 3, 3, 3, 3, 2],
-                    [2, 3, 0, 0, 0, 0, 0, 3, 2],
-                    [2, 3, 3, 3, 3, 3, 3, 3, 2],
-                    [0, 1, 3, 3, 3, 3, 3, 1, 0],
-                    [0, 0, 1, 1, 1, 1, 1, 0, 0]
+                    [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+                    [0, 1, 2, 2, 2, 2, 2, 2, 2, 1, 0],
+                    [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1],
+                    [1, 2, 0, 0, 2, 2, 2, 0, 0, 2, 1],
+                    [1, 2, 0, 0, 2, 2, 2, 0, 0, 2, 1],
+                    [1, 2, 2, 2, 2, 0, 2, 2, 2, 2, 1],
+                    [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1],
+                    [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+                    [0, 0, 0, 3, 0, 3, 0, 3, 0, 0, 0], // Jaw teeth
+                    [0, 0, 0, 3, 3, 3, 3, 3, 0, 0, 0]  // Jaw bottom
                 ],
                 colors: [
-                    [0, 120, 255],
-                    [0, 200, 255],
-                    [255, 60, 100]
+                    [100, 100, 110], // 1: Border
+                    [230, 230, 240], // 2: Bone
+                    [210, 210, 220]  // 3: Jaw Bone
                 ]
             }
         ];
@@ -480,7 +502,8 @@ class Game {
                         color: colors[cIdx] || colors[0],
                         points: cell === 1 ? 150 : 100,
                         destroyed: false,
-                        scale: 1
+                        scale: 1,
+                        isJaw: cell === 3
                     });
                 }
             }
@@ -512,7 +535,7 @@ class Game {
         if (fullReset) {
             this.score = 0;
             this.elapsedTime = 0;
-            this.lives = 3;
+            this.lives = 3 + (this.extraLives || 0);
             this.currentLevel = 0;
             this.combo = 0;
             this.confetti = [];
@@ -526,6 +549,9 @@ class Game {
         this.brickSpawnTimer = 0;
         this.paddleBounceTimer = 0.3;
         this.particles = [];
+        this.companionProjectiles = [];
+        this.companionFireTimer = 0;
+        this.coinDrops = [];
     }
 
     initStars() {
@@ -588,9 +614,16 @@ class Game {
                 volume: this.volume,
                 difficulty: this.difficulty,
                 selectedColorIndex: this.selectedColorIndex,
-                highScore: this.highScore
+                highScore: this.highScore,
+                coins: this.coins,
+                extraLives: this.extraLives || 0,
+                ownedCompanions: this.companions.filter(c => c.owned).map(c => c.id),
+                equippedCompanion: this.equippedCompanion,
+                shopFirstVisit: this.shopFirstVisit,
+                btnScale: this.btnScale
             };
             localStorage.setItem('ricochet_settings', JSON.stringify(settings));
+            document.getElementById('controls').style.setProperty('--btn-scale', (this.btnScale || 100) / 100);
         } catch (e) {
             console.warn('localStorage save warning:', e);
         }
@@ -606,6 +639,20 @@ class Game {
                 this.difficulty = settings.difficulty ?? 1;
                 this.selectedColorIndex = settings.selectedColorIndex ?? 0;
                 this.highScore = settings.highScore ?? 0;
+                this.coins = settings.coins ?? 0;
+                this.extraLives = settings.extraLives ?? 0;
+                this.shopFirstVisit = settings.shopFirstVisit ?? true;
+                this.btnScale = settings.btnScale ?? 100;
+                if (this.btnScale < 90) this.btnScale = 90;
+                if (this.btnScale > 120) this.btnScale = 120;
+                this.equippedCompanion = settings.equippedCompanion ?? null;
+                document.getElementById('controls').style.setProperty('--btn-scale', this.btnScale / 100);
+                if (settings.ownedCompanions) {
+                    for (const comp of this.companions) {
+                        comp.owned = settings.ownedCompanions.includes(comp.id);
+                        comp.equipped = (comp.id === this.equippedCompanion);
+                    }
+                }
             }
         } catch (e) {
             console.warn('localStorage load warning:', e);
@@ -655,15 +702,17 @@ class Game {
         }
 
         // Touch - Canvas (for menus & options volume dragging)
+        let lastTouchY = 0;
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this.audio.tryResumeBGM();
             const touch = e.touches[0];
+            lastTouchY = touch.clientY;
             this.handleTap(touch.clientX, touch.clientY);
         });
 
         this.canvas.addEventListener('touchmove', (e) => {
-            if (this.state === GameState.Options && e.touches.length > 0) {
+            if (e.touches.length > 0) {
                 e.preventDefault();
                 const touch = e.touches[0];
                 const rect = this.canvas.getBoundingClientRect();
@@ -671,24 +720,47 @@ class Game {
                 const ny = (touch.clientY - rect.top) / rect.height;
                 const vx = nx * this.w;
                 const vy = ny * this.h;
-                this.handleOptionsDrag(vx, vy);
+
+                if (this.state === GameState.Options) {
+                    this.handleOptionsDrag(vx, vy);
+                } else if (this.state === GameState.Shop) {
+                    const dy = touch.clientY - lastTouchY;
+                    const vdy = (dy / rect.height) * this.h;
+                    this.shopScrollY = (this.shopScrollY || 0) - vdy;
+                    if (this.shopScrollY < 0) this.shopScrollY = 0;
+                    const maxScroll = Math.max(0, (this.shopContentH || 0) - (this.h * 0.885));
+                    if (this.shopScrollY > maxScroll) this.shopScrollY = maxScroll;
+                    lastTouchY = touch.clientY;
+                }
             }
         }, { passive: false });
 
         let isMouseDown = false;
+        let lastMouseY = 0;
         this.canvas.addEventListener('mousedown', (e) => {
             isMouseDown = true;
+            lastMouseY = e.clientY;
             this.audio.tryResumeBGM();
             this.handleTap(e.clientX, e.clientY);
         });
         this.canvas.addEventListener('mousemove', (e) => {
-            if (isMouseDown && this.state === GameState.Options) {
+            if (isMouseDown) {
                 const rect = this.canvas.getBoundingClientRect();
                 const nx = (e.clientX - rect.left) / rect.width;
                 const ny = (e.clientY - rect.top) / rect.height;
                 const vx = nx * this.w;
                 const vy = ny * this.h;
-                this.handleOptionsDrag(vx, vy);
+                if (this.state === GameState.Options) {
+                    this.handleOptionsDrag(vx, vy);
+                } else if (this.state === GameState.Shop) {
+                    const dy = e.clientY - lastMouseY;
+                    const vdy = (dy / rect.height) * this.h;
+                    this.shopScrollY = (this.shopScrollY || 0) - vdy;
+                    if (this.shopScrollY < 0) this.shopScrollY = 0;
+                    const maxScroll = Math.max(0, (this.shopContentH || 0) - (this.h * 0.885));
+                    if (this.shopScrollY > maxScroll) this.shopScrollY = maxScroll;
+                    lastMouseY = e.clientY;
+                }
             }
         });
         window.addEventListener('mouseup', () => { isMouseDown = false; });
@@ -705,12 +777,14 @@ class Game {
 
         // Top-left Pause button tap check during Playing or Paused
         if (this.state === GameState.Playing || this.state === GameState.Paused) {
-            const pBtnX = 10 * (this.w / 854);
-            const pBtnY = 8 * (this.h / 480);
-            const pBtnW = 80 * (this.w / 854);
-            const pBtnH = 38 * (this.h / 480);
-            if (vx >= pBtnX - 5 && vx <= pBtnX + pBtnW + 10 &&
-                vy >= pBtnY - 5 && vy <= pBtnY + pBtnH + 10) {
+            const uiY = this.h * 0.04;
+            const iconSize = this.h * 0.055;
+            const pBtnX = this.w * 0.03;
+            const pBtnY = uiY;
+            const pBtnW = iconSize * 1.5;
+            const pBtnH = iconSize;
+            if (vx >= pBtnX - 10 && vx <= pBtnX + pBtnW + 15 &&
+                vy >= pBtnY - 10 && vy <= pBtnY + pBtnH + 15) {
                 this.audio.init();
                 this.audio.playPauseSound();
                 if (this.state === GameState.Playing) {
@@ -727,6 +801,8 @@ class Game {
             this.handleMenuTap(vx, vy);
         } else if (this.state === GameState.Options) {
             this.handleOptionsTap(vx, vy);
+        } else if (this.state === GameState.Shop) {
+            this.handleShopTap(vx, vy);
         } else if (this.state === GameState.Paused) {
             this.handlePauseTap(vx, vy);
         } else if (this.state === GameState.StageClear || this.state === GameState.GameOver) {
@@ -743,9 +819,9 @@ class Game {
         const btnW = w * 0.28;
         const btnH = h * 0.08;
         const btnX = (w - btnW) / 2;
-        const positions = [0.42, 0.54, 0.66];
+        const positions = [0.38, 0.49, 0.60, 0.71];
 
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 4; i++) {
             const btnY = h * positions[i] - btnH * 0.3;
             if (vx >= btnX && vx <= btnX + btnW && vy >= btnY && vy <= btnY + btnH) {
                 this.menuSelectedIndex = i;
@@ -755,8 +831,17 @@ class Game {
                     this.initBricks();
                     this.triggerStateTransition(GameState.Playing);
                 } else if (i === 1) {
-                    this.triggerStateTransition(GameState.Options);
+                    this.shopCelloVisible = true;
+                    if (this.shopFirstVisit) {
+                        this.shopAssistantStep = 0;
+                        this.shopAssistantTimer = 0;
+                    } else {
+                        this.shopAssistantStep = 4;
+                    }
+                    this.triggerStateTransition(GameState.Shop);
                 } else if (i === 2) {
+                    this.triggerStateTransition(GameState.Options);
+                } else if (i === 3) {
                     this.exitGame();
                 }
                 return;
@@ -782,7 +867,7 @@ class Game {
                     this.state = GameState.Playing;
                 } else if (i === 1) {
                     // Restart
-                    this.lives = 3;
+                    this.lives = 3 + (this.extraLives || 0);
                     this.score = 0;
                     this.resetBallAndPaddle(true);
                     this.initBricks();
@@ -863,9 +948,16 @@ class Game {
             this.audio.init(); this.audio.playBrickSound(1.1);
             this.saveSettings();
         }
+        // Button Size area
+        else if (vy >= boxY + h * 0.37 && vy <= boxY + h * 0.46) {
+            this.optionSelectedIndex = 3;
+            const barX = boxX + boxW * 0.50;
+            const barW = boxW * 0.40;
+            this.updateBtnSizeFromPos(vx, barX, barW);
+        }
         // BACK button area
         else if (vy >= boxY + boxH * 0.78) {
-            this.optionSelectedIndex = 3;
+            this.optionSelectedIndex = 4;
             this.audio.init();
             this.audio.playBrickSound(0.6);
             this.triggerStateTransition(GameState.Menu);
@@ -884,6 +976,13 @@ class Game {
             const barX = boxX + boxW * 0.50;
             const barW = boxW * 0.40;
             this.updateVolumeFromPos(vx, barX, barW);
+        }
+        // Button Size row Y region
+        else if (vy >= boxY + h * 0.37 && vy <= boxY + h * 0.46) {
+            this.optionSelectedIndex = 3;
+            const barX = boxX + boxW * 0.50;
+            const barW = boxW * 0.40;
+            this.updateBtnSizeFromPos(vx, barX, barW);
         }
     }
 
@@ -904,14 +1003,30 @@ class Game {
         }
     }
 
+    updateBtnSizeFromPos(vx, barX, barW) {
+        let pct = (vx - barX) / barW;
+        if (pct < 0) pct = 0;
+        if (pct > 1) pct = 1;
+        let newSize = 90 + Math.round(pct * 3) * 10;
+        if (newSize !== this.btnScale) {
+            this.btnScale = newSize;
+            if (this.audio) {
+                this.audio.init();
+                this.audio.playBrickSound(1.1);
+            }
+            this.saveSettings();
+        }
+    }
+
     handleKeyDown(code) {
+        this.shopIdleTimer = 0;
         if (this.state === GameState.Menu) {
             if (code === 'ArrowUp') {
-                this.menuSelectedIndex = (this.menuSelectedIndex - 1 + 3) % 3;
+                this.menuSelectedIndex = (this.menuSelectedIndex - 1 + 4) % 4;
                 this.audio.init(); this.audio.playBrickSound(1.3);
             }
             if (code === 'ArrowDown') {
-                this.menuSelectedIndex = (this.menuSelectedIndex + 1) % 3;
+                this.menuSelectedIndex = (this.menuSelectedIndex + 1) % 4;
                 this.audio.init(); this.audio.playBrickSound(1.3);
             }
             if (code === 'Enter' || code === 'Space') {
@@ -921,18 +1036,27 @@ class Game {
                     this.initBricks();
                     this.triggerStateTransition(GameState.Playing);
                 } else if (this.menuSelectedIndex === 1) {
-                    this.triggerStateTransition(GameState.Options);
+                    this.shopCelloVisible = true;
+                    if (this.shopFirstVisit) {
+                        this.shopAssistantStep = 0;
+                        this.shopAssistantTimer = 0;
+                    } else {
+                        this.shopAssistantStep = 4;
+                    }
+                    this.triggerStateTransition(GameState.Shop);
                 } else if (this.menuSelectedIndex === 2) {
+                    this.triggerStateTransition(GameState.Options);
+                } else if (this.menuSelectedIndex === 3) {
                     this.exitGame();
                 }
             }
         } else if (this.state === GameState.Options) {
             if (code === 'ArrowUp') {
-                this.optionSelectedIndex = (this.optionSelectedIndex - 1 + 4) % 4;
+                this.optionSelectedIndex = (this.optionSelectedIndex - 1 + 5) % 5;
                 this.audio.init(); this.audio.playBrickSound(1.3);
             }
             if (code === 'ArrowDown') {
-                this.optionSelectedIndex = (this.optionSelectedIndex + 1) % 4;
+                this.optionSelectedIndex = (this.optionSelectedIndex + 1) % 5;
                 this.audio.init(); this.audio.playBrickSound(1.3);
             }
             if (code === 'ArrowLeft') {
@@ -945,6 +1069,10 @@ class Game {
                     this.saveSettings();
                 } else if (this.optionSelectedIndex === 2) {
                     this.difficulty = (this.difficulty - 1 + 3) % 3;
+                    this.audio.init(); this.audio.playBrickSound(1.1);
+                    this.saveSettings();
+                } else if (this.optionSelectedIndex === 3) {
+                    this.btnScale = Math.max(90, this.btnScale - 10);
                     this.audio.init(); this.audio.playBrickSound(1.1);
                     this.saveSettings();
                 }
@@ -962,6 +1090,10 @@ class Game {
                     this.difficulty = (this.difficulty + 1) % 3;
                     this.audio.init(); this.audio.playBrickSound(1.1);
                     this.saveSettings();
+                } else if (this.optionSelectedIndex === 3) {
+                    this.btnScale = Math.min(120, this.btnScale + 10);
+                    this.audio.init(); this.audio.playBrickSound(1.1);
+                    this.saveSettings();
                 }
             }
             if (code === 'Enter' || code === 'Space') {
@@ -973,6 +1105,30 @@ class Game {
             if (code === 'Escape') {
                 this.audio.init(); this.audio.playBrickSound(0.6);
                 this.triggerStateTransition(GameState.Menu);
+            }
+        } else if (this.state === GameState.Shop) {
+            if (code === 'ArrowLeft') {
+                this.shopSelectedIndex = (this.shopSelectedIndex - 1 + this.companions.length) % this.companions.length;
+                this.audio.init(); this.audio.playBrickSound(1.3);
+            }
+            if (code === 'ArrowRight') {
+                this.shopSelectedIndex = (this.shopSelectedIndex + 1) % this.companions.length;
+                this.audio.init(); this.audio.playBrickSound(1.3);
+            }
+            if (code === 'Enter' || code === 'Space') {
+                if (this.shopCelloVisible) {
+                    this.advanceCelloDialog();
+                } else {
+                    this.handleShopAction();
+                }
+            }
+            if (code === 'Escape') {
+                if (this.shopCelloVisible) {
+                    this.dismissCello();
+                } else {
+                    this.audio.init(); this.audio.playBrickSound(0.6);
+                    this.triggerStateTransition(GameState.Menu);
+                }
             }
         } else if (this.state === GameState.Playing) {
             if (code === 'Escape') {
@@ -1036,6 +1192,9 @@ class Game {
                         this.resetBallAndPaddle();
                         this.initBricks();
                     }
+                    if (this.state === GameState.Shop) {
+                        this.shopSelectedIndex = 0;
+                    }
                     if (this.state === GameState.StageClear || this.state === GameState.GameOver) {
                         this.overlayTimer = 0;
                         this.calculateScoreBreakdown();
@@ -1068,6 +1227,12 @@ class Game {
         this.updateStars(dt);
         this.updateFloatingTexts(dt);
         this.updateConfetti(dt);
+        this.updateCoinDrops(dt);
+        this.updateCompanionProjectiles(dt);
+        if (this.state === GameState.Shop) {
+            this.shopCelloAnimTimer += dt;
+            this.shopIdleTimer = (this.shopIdleTimer || 0) + dt;
+        }
 
         if (this.levelStartTimer > 0) {
             this.levelStartTimer -= dt;
@@ -1160,11 +1325,24 @@ class Game {
                 ball.y = 208;
             }
         } else {
+            // Stage movement logic
+            let stageOffsetX = 0;
+            if (this.currentLevel >= 2 && this.currentLevel <= 4) { // Stages 3, 4, 5
+                const speed = (this.currentLevel === 3) ? 3.5 : 2.5; // Star (idx 3) moves slightly faster
+                stageOffsetX = Math.sin(this.elapsedTime * speed) * 35; // 35px left and right
+            }
+
+            let jawOffsetY = 0;
+            if (this.currentLevel === 4) { // Stage 5 (Skull)
+                // Jaw opens and closes rapidly
+                jawOffsetY = Math.max(0, Math.sin(this.elapsedTime * 8) * 12);
+            }
+
             // Ensure bricks are in final position
             for (const brick of this.bricks) {
                 brick.scale = 1;
-                brick.x = brick.targetX;
-                brick.y = brick.targetY;
+                brick.x = brick.targetX + stageOffsetX;
+                brick.y = brick.targetY + (brick.isJaw ? jawOffsetY : 0);
             }
 
             // Update all balls
@@ -1187,12 +1365,22 @@ class Game {
                     this.isNewHighScore = this.score > this.highScore;
                     if (this.isNewHighScore) {
                         this.highScore = this.score;
-                        this.saveSettings();
                     }
+                    this.extraLives = 0;
+                    this.saveSettings();
                     this.audio.init(); this.audio.playGameOver();
                     this.triggerStateTransition(GameState.GameOver);
                 } else {
                     this.resetBallAndPaddle(false);
+                }
+            }
+
+            // Companion fire logic
+            if (this.equippedCompanion) {
+                this.companionFireTimer += dt;
+                if (this.companionFireTimer >= this.companionFireRate) {
+                    this.companionFireTimer = 0;
+                    this.fireCompanionProjectile();
                 }
             }
         }
@@ -1292,6 +1480,11 @@ class Game {
 
                 brick.destroyed = true;
 
+                // Coin drop chance (30%)
+                if (Math.random() < 0.30) {
+                    this.spawnCoinDrop(brick.x, brick.y);
+                }
+
                 // Proper collision detection
                 const overlapLeft = (ballCX + ball.radius) - bLeft;
                 const overlapRight = bRight - (ballCX - ball.radius);
@@ -1354,6 +1547,7 @@ class Game {
                         this.triggerStateTransition(GameState.StageClear);
                     } else {
                         this.audio.init(); this.audio.playLevelClear();
+                        this.lives = 3 + (this.extraLives || 0); // Reset lives per stage
                         this.resetBallAndPaddle(false);
                         this.initBricks();
                     }
@@ -1691,6 +1885,1283 @@ class Game {
         }
     }
 
+    // ─── Coin Drops ──────────────────────────────────
+
+    spawnCoinDrop(x, y) {
+        this.coinDrops.push({
+            x, y,
+            vy: 50 + Math.random() * 30,
+            vx: (Math.random() - 0.5) * 40,
+            rotation: 0,
+            rotSpeed: (Math.random() - 0.5) * 8,
+            size: 6,
+            pulse: Math.random() * Math.PI * 2,
+            collected: false,
+            lifetime: 0
+        });
+    }
+
+    updateCoinDrops(dt) {
+        if (this.state !== GameState.Playing) return;
+
+        this.coinDrops = this.coinDrops.filter(coin => {
+            if (coin.collected) return false;
+            coin.lifetime += dt;
+            coin.y += coin.vy * dt;
+            coin.x += coin.vx * dt;
+            coin.rotation += coin.rotSpeed * dt;
+            coin.pulse += dt * 5;
+            coin.vy += 80 * dt;
+
+            // Paddle collision
+            const pLeft = this.paddleX - this.paddleWidth / 2;
+            const pRight = this.paddleX + this.paddleWidth / 2;
+            const pTop = this.paddleY - this.paddleHeight / 2;
+
+            if (coin.y + coin.size > pTop && coin.y < pTop + 10 &&
+                coin.x + coin.size > pLeft && coin.x - coin.size < pRight) {
+                coin.collected = true;
+                this.coins++;
+                this.saveSettings();
+                this.audio.init(); this.audio.playBrickSound(1.5);
+                this.spawnFloatingText(coin.x, coin.y - 10, '+1 COIN', [255, 215, 0]);
+                return false;
+            }
+
+            return coin.y < V_HEIGHT + 20;
+        });
+    }
+
+    drawCoinDrops(ctx) {
+        for (const coin of this.coinDrops) {
+            ctx.save();
+            ctx.translate(coin.x, coin.y);
+            ctx.rotate(coin.rotation);
+
+            const pulseScale = 1 + Math.sin(coin.pulse) * 0.15;
+            ctx.scale(pulseScale, pulseScale);
+
+            // Coin glow
+            const glowGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, coin.size * 2);
+            glowGrad.addColorStop(0, rgba(255, 215, 0, 80));
+            glowGrad.addColorStop(1, rgba(255, 215, 0, 0));
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(-coin.size * 2, -coin.size * 2, coin.size * 4, coin.size * 4);
+
+            // Coin body
+            ctx.beginPath();
+            ctx.arc(0, 0, coin.size / 2, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(255, 215, 0);
+            ctx.fill();
+            ctx.strokeStyle = rgba(255, 255, 200);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Coin inner mark
+            ctx.font = '5px PixelFont, monospace';
+            ctx.fillStyle = rgba(180, 120, 0);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('C', 0, 0);
+
+            ctx.restore();
+        }
+    }
+
+    // ─── Companion System ─────────────────────────────
+
+    fireCompanionProjectile() {
+        if (!this.equippedCompanion) return;
+        const comp = this.companions.find(c => c.id === this.equippedCompanion);
+        if (!comp) return;
+
+        const startX = this.paddleX;
+        const startY = this.paddleY - 12;
+
+        if (comp.type === 'linear') {
+            this.companionProjectiles.push({
+                x: startX, y: startY,
+                vx: 0, vy: -200,
+                type: 'linear',
+                color: comp.color,
+                size: 3,
+                lifetime: 0
+            });
+        } else if (comp.type === 'zigzag') {
+            this.companionProjectiles.push({
+                x: startX, y: startY,
+                vx: 0, vy: -180,
+                type: 'zigzag',
+                color: comp.color,
+                size: 3,
+                lifetime: 0,
+                zigzagTimer: 0,
+                zigzagDir: 1
+            });
+        } else if (comp.type === 'side') {
+            this.companionProjectiles.push({
+                x: startX, y: startY,
+                vx: -120, vy: -150,
+                type: 'side',
+                color: comp.color,
+                size: 3,
+                lifetime: 0
+            });
+            this.companionProjectiles.push({
+                x: startX, y: startY,
+                vx: 120, vy: -150,
+                type: 'side',
+                color: comp.color,
+                size: 3,
+                lifetime: 0
+            });
+        }
+
+        this.audio.init(); this.audio.playBrickSound(1.8);
+    }
+
+    updateCompanionProjectiles(dt) {
+        if (this.state !== GameState.Playing) return;
+
+        this.companionProjectiles = this.companionProjectiles.filter(proj => {
+            proj.lifetime += dt;
+
+            if (proj.type === 'zigzag') {
+                proj.zigzagTimer += dt;
+                if (proj.zigzagTimer > 0.15) {
+                    proj.zigzagTimer = 0;
+                    proj.zigzagDir *= -1;
+                }
+                proj.vx = proj.zigzagDir * 120;
+            }
+
+            proj.x += proj.vx * dt;
+            proj.y += proj.vy * dt;
+
+            // Out of bounds - NO bouncing
+            if (proj.y < -10 || proj.y > V_HEIGHT + 10 || proj.x < -10 || proj.x > PLAY_AREA_WIDTH + 10) {
+                return false;
+            }
+
+            // Brick collision
+            for (const brick of this.bricks) {
+                if (brick.destroyed) continue;
+                const bLeft = brick.x - brick.w / 2;
+                const bRight = brick.x + brick.w / 2;
+                const bTop = brick.y - brick.h / 2;
+                const bBottom = brick.y + brick.h / 2;
+
+                if (proj.x + proj.size > bLeft && proj.x - proj.size < bRight &&
+                    proj.y + proj.size > bTop && proj.y - proj.size < bBottom) {
+                    brick.destroyed = true;
+
+                    this.combo++;
+                    this.comboTimer = 2.0;
+                    const comboMultiplier = Math.min(this.combo, 5);
+                    const points = brick.points * comboMultiplier;
+                    this.score += points;
+
+                    if (Math.random() < 0.30) {
+                        this.spawnCoinDrop(brick.x, brick.y);
+                    }
+
+                    this.spawnParticles(brick.x, brick.y, brick.color);
+                    this.audio.init(); this.audio.playBrickSound(1.0);
+
+                    if (this.combo >= 2) {
+                        this.spawnFloatingText(
+                            brick.x, brick.y - 10,
+                            `x${this.combo}`,
+                            this.combo >= 5 ? [255, 50, 255] : this.combo >= 3 ? [255, 200, 0] : [0, 255, 200]
+                        );
+                    }
+
+                    if (this.bricks.every(b => b.destroyed)) {
+                        this.currentLevel++;
+                        if (this.currentLevel >= 5) {
+                            this.isNewHighScore = this.score > this.highScore;
+                            if (this.isNewHighScore) {
+                                this.highScore = this.score;
+                                this.saveSettings();
+                            }
+                            this.audio.init(); this.audio.playLevelClear();
+                            this.triggerStateTransition(GameState.StageClear);
+                        } else {
+                            this.audio.init(); this.audio.playLevelClear();
+                            this.lives = 3 + (this.extraLives || 0);
+                            this.resetBallAndPaddle(false);
+                            this.initBricks();
+                        }
+                    }
+
+                    return false; // Projectile destroyed on contact
+                }
+            }
+
+            return proj.lifetime < 5;
+        });
+    }
+
+    drawCompanion(ctx) {
+        if (this.state !== GameState.Playing && this.state !== GameState.Paused) return;
+        if (!this.equippedCompanion) return;
+        const comp = this.companions.find(c => c.id === this.equippedCompanion);
+        if (!comp) return;
+
+        const cx = this.paddleX;
+        const cy = this.paddleY - 14;
+        const pulse = Math.sin(this.menuAnimTimer * 4) * 0.2 + 1;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(pulse, pulse);
+
+        const glowGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 10);
+        glowGrad.addColorStop(0, rgba(comp.color[0], comp.color[1], comp.color[2], 60));
+        glowGrad.addColorStop(1, rgba(comp.color[0], comp.color[1], comp.color[2], 0));
+        ctx.fillStyle = glowGrad;
+        ctx.fillRect(-10, -10, 20, 20);
+
+        ctx.beginPath();
+        ctx.moveTo(0, -5);
+        ctx.lineTo(4, 0);
+        ctx.lineTo(0, 5);
+        ctx.lineTo(-4, 0);
+        ctx.closePath();
+        ctx.fillStyle = rgba(comp.color[0], comp.color[1], comp.color[2]);
+        ctx.fill();
+        ctx.strokeStyle = rgba(255, 255, 255, 200);
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, -3);
+        ctx.lineTo(2, 0);
+        ctx.lineTo(0, 3);
+        ctx.lineTo(-2, 0);
+        ctx.closePath();
+        ctx.fillStyle = rgba(255, 255, 255, 120);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    drawCompanionProjectiles(ctx) {
+        for (const proj of this.companionProjectiles) {
+            ctx.save();
+            ctx.translate(proj.x, proj.y);
+
+            const glowGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, proj.size * 3);
+            glowGrad.addColorStop(0, rgba(proj.color[0], proj.color[1], proj.color[2], 120));
+            glowGrad.addColorStop(1, rgba(proj.color[0], proj.color[1], proj.color[2], 0));
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(-proj.size * 3, -proj.size * 3, proj.size * 6, proj.size * 6);
+
+            ctx.beginPath();
+            ctx.arc(0, 0, proj.size, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(proj.color[0], proj.color[1], proj.color[2]);
+            ctx.fill();
+            ctx.strokeStyle = rgba(255, 255, 255, 200);
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+
+            const trailLen = Math.sqrt(proj.vx * proj.vx + proj.vy * proj.vy) * 0.03;
+            const angle = Math.atan2(proj.vy, proj.vx);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-Math.cos(angle) * trailLen, -Math.sin(angle) * trailLen);
+            ctx.strokeStyle = rgba(proj.color[0], proj.color[1], proj.color[2], 150);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+    }
+
+    // ─── Shop System ──────────────────────────────────
+
+    handleShopTap(vx, vy) {
+        this.shopIdleTimer = 0;
+        const w = this.w, h = this.h;
+
+        if (this.shopAssistantStep < 4) {
+            this.advanceCelloDialog();
+            return;
+        }
+
+        if (this.shopConfirmType) {
+            // Confirm overlay tap
+            const cw = w * 0.6;
+            const ch = h * 0.35;
+            const cx = (w - cw) / 2;
+            const cy = (h - ch) / 2;
+            const btnW = cw * 0.4;
+            const btnH = h * 0.08;
+            const btnY = cy + ch - btnH - h * 0.04;
+            const btnCancelX = cx + cw * 0.05;
+            const btnBuyX = cx + cw * 0.95 - btnW;
+
+            if (vy >= btnY && vy <= btnY + btnH) {
+                if (vx >= btnCancelX && vx <= btnCancelX + btnW) {
+                    this.shopConfirmType = null;
+                    this.audio.init(); this.audio.playBrickSound(0.9);
+                } else if (vx >= btnBuyX && vx <= btnBuyX + btnW) {
+                    if (this.shopConfirmType === 'companion') {
+                        const comp = this.companions[this.shopConfirmIndex];
+                        if (comp) {
+                            this.coins -= comp.price;
+                            comp.owned = true;
+                            comp.equipped = true;
+                            for (const c of this.companions) {
+                                if (c.id !== comp.id) c.equipped = false;
+                            }
+                            this.equippedCompanion = comp.id;
+                            this.saveSettings();
+                            this.audio.init(); this.audio.playLevelClear();
+                            this.spawnConfetti();
+                        }
+                    } else if (this.shopConfirmType === 'item') {
+                        if (this.shopConfirmIndex === 0) {
+                            this.coins -= 25;
+                            this.extraLives = Math.min(2, (this.extraLives || 0) + 1);
+                            this.lives = 3 + this.extraLives;
+                            this.saveSettings();
+                            this.audio.init(); this.audio.playLevelClear();
+                            this.spawnConfetti();
+                        }
+                    }
+                    this.shopConfirmType = null;
+                }
+            }
+            return;
+        }
+
+        // Back button check
+        const backBtnW = w * 0.15;
+        const backBtnH = h * 0.065;
+        const backBtnX = w * 0.02;
+        const backBtnY = (h * 0.115 - backBtnH) / 2;
+        if (vx >= backBtnX && vx <= backBtnX + backBtnW && vy >= backBtnY && vy <= backBtnY + backBtnH) {
+            this.audio.init(); this.audio.playBrickSound(0.6);
+            this.triggerStateTransition(GameState.Menu);
+            return;
+        }
+
+        // Coordinates matching drawShop
+        const headerH = h * 0.115;
+        const contentY = headerH + 4;
+        const scrollOffset = this.shopScrollY || 0;
+        let drawY = contentY + 8 - scrollOffset;
+
+        // Skip to Companion Row
+        const secLabelSize = h * 0.028;
+        drawY += secLabelSize + 12;
+
+        const cardW = w * 0.27;
+        const cardH = h * 0.38;
+        const cardGap = (w - this.companions.length * cardW) / (this.companions.length + 1);
+
+        for (let i = 0; i < this.companions.length; i++) {
+            const cx = cardGap + i * (cardW + cardGap);
+            const cy = drawY;
+            if (vx >= cx && vx <= cx + cardW && vy >= cy && vy <= cy + cardH) {
+                this.shopSelectedIndex = i;
+                this.audio.init(); this.audio.playBrickSound(1.1);
+                return;
+            }
+
+            // Buy/Equip button check if selected
+            if (this.shopSelectedIndex === i) {
+                const btnY = cy + cardH + 6;
+                const btnH = h * 0.055;
+                if (vx >= cx && vx <= cx + cardW && vy >= btnY && vy <= btnY + btnH) {
+                    this.handleShopAction();
+                    return;
+                }
+            }
+        }
+
+        // Skip past companion row to Items
+        drawY += cardH + (this.shopSelectedIndex >= 0 ? h * 0.055 + 6 : 0) + 24;
+        drawY += secLabelSize + 12;
+
+        // Items grid
+        const itemCardW = w * 0.27;
+        const itemCardH = h * 0.28;
+        const itemGap = (w - 3 * itemCardW) / 4;
+
+        for (let i = 0; i < 3; i++) { // Revive, soon1, soon2
+            const col = i % 3;
+            const row = Math.floor(i / 3);
+            const ix = itemGap + col * (itemCardW + itemGap);
+            const iy = drawY + row * (itemCardH + 10);
+
+            if (vx >= ix && vx <= ix + itemCardW && vy >= iy && vy <= iy + itemCardH) {
+                if (i === 0) { // Revive
+                    if ((this.extraLives || 0) >= 2) {
+                        this.audio.init(); this.audio.playHitWallSound();
+                    } else if (this.coins >= 25) {
+                        this.shopConfirmType = 'item';
+                        this.shopConfirmIndex = 0;
+                        this.audio.init(); this.audio.playBrickSound(0.9);
+                    } else {
+                        this.audio.init(); this.audio.playLifeLost();
+                    }
+                }
+                return;
+            }
+        }
+    }
+
+    handleShopAction() {
+        const comp = this.companions[this.shopSelectedIndex];
+        if (!comp) return;
+
+        if (!comp.owned) {
+            if (this.coins >= comp.price) {
+                this.shopConfirmType = 'companion';
+                this.shopConfirmIndex = this.shopSelectedIndex;
+                this.audio.init(); this.audio.playBrickSound(0.9);
+            } else {
+                this.audio.init(); this.audio.playLifeLost();
+            }
+        } else {
+            if (comp.equipped) {
+                comp.equipped = false;
+                this.equippedCompanion = null;
+            } else {
+                for (const c of this.companions) c.equipped = false;
+                comp.equipped = true;
+                this.equippedCompanion = comp.id;
+            }
+            this.saveSettings();
+            this.audio.init(); this.audio.playBrickSound(1.1);
+        }
+    }
+
+    advanceCelloDialog() {
+        if (this.shopAssistantStep < 4) {
+            this.shopAssistantStep++;
+            this.shopAssistantTimer = 0;
+            this.audio.init(); this.audio.playBrickSound(1.1);
+        }
+        if (this.shopAssistantStep === 4) {
+            this.shopFirstVisit = false;
+            this.saveSettings();
+        }
+    }
+
+    dismissCello() {
+        this.shopCelloVisible = false;
+        this.shopFirstVisit = false;
+        this.saveSettings();
+    }
+
+    drawShop(ctx, w, h) {
+        if (!this.shopScrollY) this.shopScrollY = 0;
+
+        // ── Header bar ──
+        const headerH = h * 0.115;
+        const headerGrad = ctx.createLinearGradient(0, 0, 0, headerH);
+        headerGrad.addColorStop(0, rgba(40, 20, 0, 240));
+        headerGrad.addColorStop(1, rgba(20, 10, 0, 240));
+        ctx.fillStyle = headerGrad;
+        ctx.fillRect(0, 0, w, headerH);
+
+        ctx.strokeStyle = rgba(255, 140, 0, 120);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(0, headerH); ctx.lineTo(w, headerH); ctx.stroke();
+
+        // Title
+        const titleText = 'SHOP';
+        const titleSize = h * 0.060;
+        const titleW = textWidth(ctx, titleText, titleSize);
+        const bloomPulse = (Math.sin(this.menuAnimTimer * 2.5) + 1) * 0.5;
+        drawText(ctx, titleText, (w - titleW) / 2 + 2, h * 0.025 + 2, titleSize, rgba(180, 80, 0, 60));
+        drawText(ctx, titleText, (w - titleW) / 2, h * 0.025, titleSize,
+            rgba(255, 180 + bloomPulse * 30, 40, 220 + bloomPulse * 35));
+
+        // Coin balance top-right
+        const coinBalText = `${this.coins}`;
+        const coinBalSize = h * 0.035;
+        const coinBalW = textWidth(ctx, coinBalText, coinBalSize);
+        const cX = w - coinBalW - w * 0.04;
+
+        ctx.beginPath();
+        ctx.arc(cX - h * 0.02, h * 0.038 - coinBalSize * 0.15, h * 0.02, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(255, 215, 0); ctx.fill();
+        ctx.strokeStyle = rgba(255, 255, 255, 180); ctx.lineWidth = 2; ctx.stroke();
+
+        drawText(ctx, coinBalText, cX, h * 0.038, coinBalSize, rgba(255, 210, 0, 230));
+
+        // ── Scrollable content area ──
+        const contentY = headerH + 4;
+        const contentH = h - headerH - 4; // Use full height minus header
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, contentY, w, contentH);
+        ctx.clip();
+
+        const scrollOffset = this.shopScrollY || 0;
+        let drawY = contentY + 8 - scrollOffset;
+
+        // ── Section: COMPANION ──
+        const secLabelSize = h * 0.028;
+        drawText(ctx, '  COMPANION', w * 0.02, drawY + 2, secLabelSize, rgba(255, 180, 60, 220));
+        ctx.strokeStyle = rgba(255, 140, 0, 60);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.02, drawY + secLabelSize + 4);
+        ctx.lineTo(w * 0.98, drawY + secLabelSize + 4);
+        ctx.stroke();
+        drawY += secLabelSize + 12;
+
+        // Companion cards row
+        const cardW = w * 0.27;
+        const cardH = h * 0.38;
+        const cardGap = (w - this.companions.length * cardW) / (this.companions.length + 1);
+        const compRowStartY = drawY;
+
+        for (let i = 0; i < this.companions.length; i++) {
+            const comp = this.companions[i];
+            const cx = cardGap + i * (cardW + cardGap);
+            const cy = drawY;
+            const selected = this.shopSelectedIndex === i;
+
+            // Card background
+            const bgA = selected ? 55 : 22;
+            fillRoundedRect(ctx, cx, cy, cardW, cardH, 8,
+                rgba(comp.color[0], comp.color[1], comp.color[2], bgA));
+
+            // Border
+            const bA = selected ? 220 + Math.sin(this.menuAnimTimer * 5) * 35 : 55;
+            drawRoundedRect(ctx, cx, cy, cardW, cardH, 8);
+            ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], bA);
+            ctx.lineWidth = selected ? 2.5 : 1;
+            ctx.stroke();
+
+            // Outer glow if selected
+            if (selected) {
+                drawRoundedRect(ctx, cx - 3, cy - 3, cardW + 6, cardH + 6, 10);
+                ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2],
+                    30 + Math.sin(this.menuAnimTimer * 4) * 15);
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            }
+
+            // Top glass shine
+            const shine = ctx.createLinearGradient(cx, cy, cx, cy + cardH * 0.35);
+            shine.addColorStop(0, rgba(255, 255, 255, selected ? 20 : 8));
+            shine.addColorStop(1, rgba(255, 255, 255, 0));
+            fillRoundedRect(ctx, cx + 1, cy + 1, cardW - 2, cardH * 0.35, 7, shine);
+
+            // Icon
+            const iconX = cx + cardW / 2;
+            const iconY = cy + cardH * 0.24;
+            const iSz = Math.min(cardW, cardH) * 0.28;
+            const iPulse = selected ? 1 + Math.sin(this.menuAnimTimer * 3) * 0.12 : 1;
+
+            ctx.save();
+            ctx.translate(iconX, iconY);
+            ctx.scale(iPulse, iPulse);
+
+            // Diamond icon
+            ctx.beginPath();
+            ctx.moveTo(0, -iSz); ctx.lineTo(iSz * 0.7, 0);
+            ctx.lineTo(0, iSz); ctx.lineTo(-iSz * 0.7, 0);
+            ctx.closePath();
+            ctx.fillStyle = rgba(comp.color[0], comp.color[1], comp.color[2]);
+            ctx.fill();
+            ctx.strokeStyle = rgba(255, 255, 255, 180);
+            ctx.lineWidth = 1.2; ctx.stroke();
+
+            // Inner shine
+            ctx.beginPath();
+            ctx.moveTo(0, -iSz * 0.5); ctx.lineTo(iSz * 0.3, 0);
+            ctx.lineTo(0, iSz * 0.5); ctx.lineTo(-iSz * 0.3, 0);
+            ctx.closePath();
+            ctx.fillStyle = rgba(255, 255, 255, 70); ctx.fill();
+
+            // Projectile indicator
+            ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], 200);
+            ctx.lineWidth = 1.8;
+            if (comp.type === 'linear') {
+                ctx.beginPath(); ctx.moveTo(0, -iSz - 4); ctx.lineTo(0, -iSz - 16); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-3, -iSz - 13); ctx.lineTo(0, -iSz - 18); ctx.lineTo(3, -iSz - 13); ctx.stroke();
+            } else if (comp.type === 'zigzag') {
+                ctx.beginPath();
+                ctx.moveTo(0, -iSz - 2); ctx.lineTo(-5, -iSz - 8);
+                ctx.lineTo(5, -iSz - 14); ctx.lineTo(0, -iSz - 20);
+                ctx.stroke();
+            } else if (comp.type === 'side') {
+                ctx.beginPath(); ctx.moveTo(-3, -iSz - 4); ctx.lineTo(-10, -iSz - 16); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-4, -iSz - 14); ctx.lineTo(-12, -iSz - 18); ctx.lineTo(-8, -iSz - 11); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(3, -iSz - 4); ctx.lineTo(10, -iSz - 16); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(4, -iSz - 14); ctx.lineTo(12, -iSz - 18); ctx.lineTo(8, -iSz - 11); ctx.stroke();
+            }
+            ctx.restore();
+
+            // Name
+            const nameSize = h * 0.028;
+            const nameW = textWidth(ctx, comp.name, nameSize);
+            drawText(ctx, comp.name, cx + (cardW - nameW) / 2, cy + cardH * 0.52,
+                nameSize, rgba(255, 255, 255, selected ? 255 : 180));
+
+            // Description
+            const cDescSize = h * 0.020;
+            const cDescW = textWidth(ctx, comp.desc, cDescSize);
+            drawText(ctx, comp.desc, cx + (cardW - cDescW) / 2, cy + cardH * 0.65,
+                cDescSize, rgba(180, 200, 220, selected ? 220 : 140));
+
+            // Status/Price
+            const statusY = cy + cardH * 0.82; // Moved down to make room for desc
+            if (comp.owned) {
+                const sLabel = comp.equipped ? 'EQUIPPED' : 'OWNED';
+                const sColor = comp.equipped ? rgba(80, 255, 180) : rgba(150, 200, 255);
+                const sSize = h * 0.022;
+                const sW = textWidth(ctx, sLabel, sSize);
+                drawText(ctx, sLabel, cx + (cardW - sW) / 2, statusY, sSize, sColor);
+            } else {
+                const priceText = `${comp.price}`;
+                const priceSize = h * 0.026;
+                const priceW = textWidth(ctx, priceText, priceSize);
+                const canAfford = this.coins >= comp.price;
+                const px = cx + (cardW - priceW) / 2 + h * 0.015;
+
+                ctx.beginPath();
+                ctx.arc(px - h * 0.018, statusY - priceSize * 0.30, h * 0.015, 0, Math.PI * 2);
+                ctx.fillStyle = rgba(255, 215, 0); ctx.fill();
+                ctx.strokeStyle = rgba(255, 255, 255, 150); ctx.lineWidth = 1; ctx.stroke();
+
+                drawText(ctx, priceText, px, statusY, priceSize,
+                    canAfford ? rgba(255, 210, 0) : rgba(255, 70, 70));
+            }
+
+            // Action button below card (selected only)
+            if (selected) {
+                const btnY = cy + cardH + 6;
+                const btnH = h * 0.055;
+                let btnText, btnColor;
+                if (!comp.owned) {
+                    btnText = this.coins >= comp.price ? 'BUY' : 'NOT ENOUGH';
+                    btnColor = this.coins >= comp.price ? [80, 255, 180] : [255, 70, 70];
+                } else {
+                    btnText = comp.equipped ? 'UNEQUIP' : 'EQUIP';
+                    btnColor = comp.equipped ? [255, 200, 50] : [80, 200, 255];
+                }
+                fillRoundedRect(ctx, cx, btnY, cardW, btnH, 4,
+                    rgba(btnColor[0], btnColor[1], btnColor[2], 40));
+                drawRoundedRect(ctx, cx, btnY, cardW, btnH, 4);
+                ctx.strokeStyle = rgba(btnColor[0], btnColor[1], btnColor[2], 200);
+                ctx.lineWidth = 1.8; ctx.stroke();
+                const bfSize = h * 0.026;
+                const bfW = textWidth(ctx, btnText, bfSize);
+                drawText(ctx, btnText, cx + (cardW - bfW) / 2, btnY + (btnH - bfSize) / 2, bfSize, rgba(255, 255, 255));
+            }
+        }
+
+        // Move drawY past companion row + button
+        drawY += cardH + (this.shopSelectedIndex >= 0 ? h * 0.055 + 6 : 0) + 24;
+
+        // ── Section: ITEMS ──
+        drawText(ctx, '  ITEMS', w * 0.02, drawY + 2, secLabelSize, rgba(255, 180, 60, 220));
+        ctx.strokeStyle = rgba(255, 140, 0, 60);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.02, drawY + secLabelSize + 4);
+        ctx.lineTo(w * 0.98, drawY + secLabelSize + 4);
+        ctx.stroke();
+        drawY += secLabelSize + 12;
+
+        // Items grid (2 columns)
+        const itemCardW = w * 0.27;
+        const itemCardH = h * 0.35;
+        const itemGap = (w - 3 * itemCardW) / 4;
+
+        const shopItems = [
+            { id: 'revive', name: 'REVIVE', desc: '+1 Life', price: 25, icon: '\u2665', color: [255, 80, 120], available: true },
+            { id: 'soon1', name: 'COMING', desc: 'SOON', price: null, icon: '?', color: [100, 100, 130], available: false },
+            { id: 'soon2', name: 'COMING', desc: 'SOON', price: null, icon: '?', color: [100, 100, 130], available: false },
+        ];
+
+        for (let i = 0; i < shopItems.length; i++) {
+            const item = shopItems[i];
+            const col = i % 3;
+            const row = Math.floor(i / 3);
+            const ix = itemGap + col * (itemCardW + itemGap);
+            const iy = drawY + row * (itemCardH + 10);
+
+            const iAvail = item.available;
+            const iBg = iAvail ? 22 : 10;
+            fillRoundedRect(ctx, ix, iy, itemCardW, itemCardH, 7,
+                rgba(item.color[0], item.color[1], item.color[2], iBg));
+            drawRoundedRect(ctx, ix, iy, itemCardW, itemCardH, 7);
+            ctx.strokeStyle = rgba(item.color[0], item.color[1], item.color[2], iAvail ? 80 : 35);
+            ctx.lineWidth = 1; ctx.stroke();
+
+            // Icon
+            const iconFontSize = h * 0.060;
+            const iconW = textWidth(ctx, item.icon, iconFontSize);
+            drawText(ctx, item.icon, ix + (itemCardW - iconW) / 2, iy + itemCardH * 0.18,
+                iconFontSize, rgba(item.color[0], item.color[1], item.color[2], iAvail ? 220 : 80));
+
+            // Name
+            const iNameSize = h * 0.024;
+            const iNameW = textWidth(ctx, item.name, iNameSize);
+            drawText(ctx, item.name, ix + (itemCardW - iNameW) / 2, iy + itemCardH * 0.57,
+                iNameSize, rgba(255, 255, 255, iAvail ? 200 : 90));
+
+            // Desc / Price
+            if (iAvail && item.price != null) {
+                const descText = item.desc;
+                const descSize = h * 0.020;
+                const descW = textWidth(ctx, descText, descSize);
+                drawText(ctx, descText, ix + (itemCardW - descW) / 2, iy + itemCardH * 0.70,
+                    descSize, rgba(180, 200, 220, 160));
+
+                const iPriceText = `${item.price}`;
+                const iPriceSize = h * 0.022;
+                const iPriceW = textWidth(ctx, iPriceText, iPriceSize);
+                const px = ix + (itemCardW - iPriceW) / 2 + h * 0.015;
+
+                ctx.beginPath();
+                ctx.arc(px - h * 0.018, iy + itemCardH * 0.88 - iPriceSize * 0.30, h * 0.015, 0, Math.PI * 2);
+                ctx.fillStyle = rgba(255, 215, 0); ctx.fill();
+                ctx.strokeStyle = rgba(255, 255, 255, 150); ctx.lineWidth = 1; ctx.stroke();
+
+                drawText(ctx, iPriceText, px, iy + itemCardH * 0.88,
+                    iPriceSize, this.coins >= item.price ? rgba(255, 210, 0) : rgba(255, 70, 70));
+            } else {
+                const descSize = h * 0.020;
+                const descW = textWidth(ctx, item.desc, descSize);
+                drawText(ctx, item.desc, ix + (itemCardW - descW) / 2, iy + itemCardH * 0.75,
+                    descSize, rgba(item.color[0], item.color[1], item.color[2], 80));
+            }
+        }
+
+        // Save total content height for scroll clamping
+        this.shopContentH = (drawY + scrollOffset) - contentY + itemCardH + 20;
+
+        ctx.restore(); // end clip
+
+        // ── Scroll indicator (right edge) ──
+        const totalContent = itemCardH + drawY + 20 - contentY;
+        if (totalContent > contentH) {
+            const trackX = w - 6;
+            const trackH = contentH;
+            const thumbH = Math.max(30, (contentH / totalContent) * trackH);
+            const thumbY = contentY + (scrollOffset / (totalContent - contentH)) * (trackH - thumbH);
+            ctx.fillStyle = rgba(255, 140, 0, 25);
+            ctx.fillRect(trackX - 2, contentY, 4, trackH);
+            ctx.fillStyle = rgba(255, 140, 0, 140);
+            fillRoundedRect(ctx, trackX - 2, thumbY, 4, thumbH, 2, rgba(255, 140, 0, 180));
+        }
+
+        // ── Back button ──
+        const backBtnW = w * 0.15;
+        const backBtnH = h * 0.065;
+        const backBtnX = w * 0.02;
+        const backBtnY = (headerH - backBtnH) / 2;
+
+        fillRoundedRect(ctx, backBtnX, backBtnY, backBtnW, backBtnH, 5, rgba(255, 120, 0, 20));
+        drawRoundedRect(ctx, backBtnX, backBtnY, backBtnW, backBtnH, 5);
+        ctx.strokeStyle = rgba(255, 140, 0, 100);
+        ctx.lineWidth = 1.5; ctx.stroke();
+
+        const backText = '< BACK';
+        const backFontSize = h * 0.028;
+        const backW2 = textWidth(ctx, backText, backFontSize);
+        drawText(ctx, backText, backBtnX + (backBtnW - backW2) / 2, backBtnY + (backBtnH - backFontSize) / 2,
+            backFontSize, rgba(220, 170, 60));
+
+        // Cello assistant overlay
+        if (this.shopCelloVisible) {
+            this.drawCelloAssistant(ctx, w, h);
+        }
+
+        // Confirm Buy Overlay
+        if (this.shopConfirmType) {
+            ctx.fillStyle = rgba(0, 5, 15, 180);
+            ctx.fillRect(0, 0, w, h);
+
+            const cw = w * 0.6;
+            const ch = h * 0.35;
+            const cx = (w - cw) / 2;
+            const cy = (h - ch) / 2;
+
+            fillRoundedRect(ctx, cx, cy, cw, ch, 8, rgba(20, 30, 45, 240));
+            drawRoundedRect(ctx, cx, cy, cw, ch, 8);
+            ctx.strokeStyle = rgba(255, 150, 50, 200);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            const cTitle = 'CONFIRM BUY?';
+            const cTSize = h * 0.04;
+            const cTW = textWidth(ctx, cTitle, cTSize);
+            drawText(ctx, cTitle, cx + (cw - cTW) / 2, cy + h * 0.04, cTSize, rgba(255, 200, 100));
+
+            const btnW = cw * 0.4;
+            const btnH = h * 0.08;
+            const btnY = cy + ch - btnH - h * 0.04;
+
+            const btnCancelX = cx + cw * 0.05;
+            fillRoundedRect(ctx, btnCancelX, btnY, btnW, btnH, 4, rgba(100, 50, 50, 200));
+            drawRoundedRect(ctx, btnCancelX, btnY, btnW, btnH, 4);
+            ctx.strokeStyle = rgba(255, 100, 100); ctx.lineWidth = 1.5; ctx.stroke();
+            const lCancel = 'CANCEL';
+            const lCSize = h * 0.025;
+            const lCW = textWidth(ctx, lCancel, lCSize);
+            drawText(ctx, lCancel, btnCancelX + (btnW - lCW) / 2, btnY + (btnH - lCSize) / 2, lCSize, rgba(255, 180, 180));
+
+            const btnBuyX = cx + cw * 0.95 - btnW;
+            fillRoundedRect(ctx, btnBuyX, btnY, btnW, btnH, 4, rgba(50, 100, 50, 200));
+            drawRoundedRect(ctx, btnBuyX, btnY, btnW, btnH, 4);
+            ctx.strokeStyle = rgba(100, 255, 100); ctx.lineWidth = 1.5; ctx.stroke();
+            const lBuy = 'BUY';
+            const lBSize = h * 0.025;
+            const lBW = textWidth(ctx, lBuy, lBSize);
+            drawText(ctx, lBuy, btnBuyX + (btnW - lBW) / 2, btnY + (btnH - lBSize) / 2, lBSize, rgba(180, 255, 180));
+        }
+    }
+
+    drawCelloAssistant(ctx, w, h) {
+
+
+        const titlePulse = (Math.sin(this.menuAnimTimer * 3) + 1) * 0.5;
+        drawText(ctx, titleText, (w - titleW) / 2 + 2, h * 0.06 + 2, titleSize, rgba(255, 200, 0, 60));
+        drawText(ctx, titleText, (w - titleW) / 2, h * 0.06, titleSize, rgba(255, 220, 0, 200 + titlePulse * 55));
+
+        // Coin balance
+        const balText = `COINS: ${this.coins}`;
+        const balSize = h * 0.028;
+        const balW = textWidth(ctx, balText, balSize);
+        drawText(ctx, balText, (w - balW) / 2, h * 0.14, balSize, rgba(255, 215, 0));
+
+        // Companion cards
+        const cardW = w * 0.22;
+        const cardH = h * 0.45;
+        const cardSpacing = w * 0.025;
+        const totalCardsW = this.companions.length * cardW + (this.companions.length - 1) * cardSpacing;
+        const startX = (w - totalCardsW) / 2;
+        const cardY = h * 0.22;
+
+        for (let i = 0; i < this.companions.length; i++) {
+            const comp = this.companions[i];
+            const cx = startX + i * (cardW + cardSpacing);
+            const selected = this.shopSelectedIndex === i;
+
+            // Card glass panel
+            const bgAlpha = selected ? 50 : 25;
+            fillRoundedRect(ctx, cx, cardY, cardW, cardH, 6,
+                rgba(comp.color[0], comp.color[1], comp.color[2], bgAlpha));
+
+            // Border
+            const borderAlpha = selected ? 220 : 60;
+            const pulseAlpha = selected ? borderAlpha + Math.sin(this.menuAnimTimer * 5) * 40 : borderAlpha;
+            drawRoundedRect(ctx, cx, cardY, cardW, cardH, 6);
+            ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], pulseAlpha);
+            ctx.lineWidth = selected ? 2.5 : 1;
+            ctx.stroke();
+
+            if (selected) {
+                drawRoundedRect(ctx, cx - 3, cardY - 3, cardW + 6, cardH + 6, 8);
+                ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], 40 + Math.sin(this.menuAnimTimer * 4) * 20);
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            // Scanlines
+            ctx.save();
+            drawRoundedRect(ctx, cx, cardY, cardW, cardH, 6);
+            ctx.clip();
+            const scanOffset = (this.menuAnimTimer * 25) % 6;
+            ctx.strokeStyle = rgba(255, 255, 255, 6);
+            ctx.lineWidth = 0.5;
+            for (let sy = scanOffset; sy < cardH; sy += 3) {
+                ctx.beginPath();
+                ctx.moveTo(cx, cardY + sy);
+                ctx.lineTo(cx + cardW, cardY + sy);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Top highlight
+            const hlGrad = ctx.createLinearGradient(cx, cardY, cx, cardY + cardH * 0.3);
+            hlGrad.addColorStop(0, rgba(255, 255, 255, selected ? 25 : 10));
+            hlGrad.addColorStop(1, rgba(255, 255, 255, 0));
+            fillRoundedRect(ctx, cx + 1, cardY + 1, cardW - 2, cardH * 0.3, 5, hlGrad);
+
+            // Companion icon
+            const iconCenterX = cx + cardW / 2;
+            const iconCenterY = cardY + cardH * 0.22;
+            const iconSize = h * 0.09;
+
+            const iconGlow = ctx.createRadialGradient(iconCenterX, iconCenterY, 0, iconCenterX, iconCenterY, iconSize);
+            iconGlow.addColorStop(0, rgba(comp.color[0], comp.color[1], comp.color[2], 80));
+            iconGlow.addColorStop(1, rgba(comp.color[0], comp.color[1], comp.color[2], 0));
+            ctx.fillStyle = iconGlow;
+            ctx.fillRect(iconCenterX - iconSize, iconCenterY - iconSize, iconSize * 2, iconSize * 2);
+
+            ctx.save();
+            ctx.translate(iconCenterX, iconCenterY);
+            const iconPulse = selected ? (Math.sin(this.menuAnimTimer * 3) * 0.15 + 1) : 1;
+            ctx.scale(iconPulse, iconPulse);
+
+            const dSize = iconSize * 0.5;
+            ctx.beginPath();
+            ctx.moveTo(0, -dSize);
+            ctx.lineTo(dSize * 0.7, 0);
+            ctx.lineTo(0, dSize);
+            ctx.lineTo(-dSize * 0.7, 0);
+            ctx.closePath();
+            ctx.fillStyle = rgba(comp.color[0], comp.color[1], comp.color[2]);
+            ctx.fill();
+            ctx.strokeStyle = rgba(255, 255, 255, 200);
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, -dSize * 0.5);
+            ctx.lineTo(dSize * 0.3, 0);
+            ctx.lineTo(0, dSize * 0.5);
+            ctx.lineTo(-dSize * 0.3, 0);
+            ctx.closePath();
+            ctx.fillStyle = rgba(255, 255, 255, 80);
+            ctx.fill();
+
+            // Projectile type indicator
+            if (comp.type === 'linear') {
+                ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], 180);
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, -dSize - 5);
+                ctx.lineTo(0, -dSize - 15);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(-3, -dSize - 12);
+                ctx.lineTo(0, -dSize - 17);
+                ctx.lineTo(3, -dSize - 12);
+                ctx.stroke();
+            } else if (comp.type === 'zigzag') {
+                ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], 180);
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, -dSize - 3);
+                ctx.lineTo(-5, -dSize - 8);
+                ctx.lineTo(5, -dSize - 13);
+                ctx.lineTo(0, -dSize - 18);
+                ctx.stroke();
+            } else if (comp.type === 'side') {
+                ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], 180);
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-dSize * 0.7 - 3, 0);
+                ctx.lineTo(-dSize * 0.7 - 13, 0);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(-dSize * 0.7 - 10, -3);
+                ctx.lineTo(-dSize * 0.7 - 15, 0);
+                ctx.lineTo(-dSize * 0.7 - 10, 3);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(dSize * 0.7 + 3, 0);
+                ctx.lineTo(dSize * 0.7 + 13, 0);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(dSize * 0.7 + 10, -3);
+                ctx.lineTo(dSize * 0.7 + 15, 0);
+                ctx.lineTo(dSize * 0.7 + 10, 3);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+
+            // Name
+            const nameSize = h * 0.032;
+            const nameW = textWidth(ctx, comp.name, nameSize);
+            drawText(ctx, comp.name, cx + (cardW - nameW) / 2, cardY + cardH * 0.48, nameSize,
+                rgba(255, 255, 255, selected ? 255 : 180));
+
+            // Description
+            const descSize = h * 0.019;
+            const descW = textWidth(ctx, comp.desc, descSize);
+            drawText(ctx, comp.desc, cx + (cardW - descW) / 2, cardY + cardH * 0.58, descSize,
+                rgba(180, 200, 220, selected ? 220 : 140));
+
+            // Status / Price
+            const statusY = cardY + cardH * 0.72;
+            if (comp.owned) {
+                if (comp.equipped) {
+                    const eqText = 'EQUIPPED';
+                    const eqSize = h * 0.024;
+                    const eqW = textWidth(ctx, eqText, eqSize);
+                    drawText(ctx, eqText, cx + (cardW - eqW) / 2, statusY, eqSize, rgba(0, 255, 180));
+                } else {
+                    const ownText = 'OWNED';
+                    const ownSize = h * 0.024;
+                    const ownW = textWidth(ctx, ownText, ownSize);
+                    drawText(ctx, ownText, cx + (cardW - ownW) / 2, statusY, ownSize, rgba(150, 200, 255));
+                }
+            } else {
+                const priceText = `${comp.price} COINS`;
+                const priceSize = h * 0.028;
+                const priceW = textWidth(ctx, priceText, priceSize);
+                const canAfford = this.coins >= comp.price;
+                drawText(ctx, priceText, cx + (cardW - priceW) / 2, statusY, priceSize,
+                    canAfford ? rgba(255, 215, 0) : rgba(255, 60, 60));
+            }
+
+            // Action button (selected card only)
+            if (selected) {
+                const btnY = cardY + cardH + h * 0.03;
+                const btnH2 = h * 0.065;
+                let btnText, btnColor;
+
+                if (!comp.owned) {
+                    btnText = this.coins >= comp.price ? 'BUY' : 'NOT ENOUGH';
+                    btnColor = this.coins >= comp.price ? [0, 255, 180] : [255, 60, 60];
+                } else {
+                    btnText = comp.equipped ? 'UNEQUIP' : 'EQUIP';
+                    btnColor = comp.equipped ? [255, 200, 0] : [0, 200, 255];
+                }
+
+                fillRoundedRect(ctx, cx, btnY, cardW, btnH2, 4,
+                    rgba(btnColor[0], btnColor[1], btnColor[2], 40));
+                drawRoundedRect(ctx, cx, btnY, cardW, btnH2, 4);
+                ctx.strokeStyle = rgba(btnColor[0], btnColor[1], btnColor[2], 200);
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                const btnFontSize = h * 0.028;
+                const btnTextW = textWidth(ctx, btnText, btnFontSize);
+                drawText(ctx, btnText, cx + (cardW - btnTextW) / 2, btnY + (btnH2 - btnFontSize) / 2, btnFontSize,
+                    rgba(255, 255, 255));
+            }
+        }
+
+        // Back button
+        const backBtnW = w * 0.18;
+        const backBtnH = h * 0.06;
+        const backBtnX = (w - backBtnW) / 2;
+        const backBtnY = h * 0.88;
+
+        fillRoundedRect(ctx, backBtnX, backBtnY, backBtnW, backBtnH, 4,
+            rgba(0, 180, 255, 20));
+        drawRoundedRect(ctx, backBtnX, backBtnY, backBtnW, backBtnH, 4);
+        ctx.strokeStyle = rgba(0, 180, 255, 120);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        const backText = 'BACK';
+        const backFontSize = h * 0.030;
+        const backW2 = textWidth(ctx, backText, backFontSize);
+        drawText(ctx, backText, (w - backW2) / 2, backBtnY + (backBtnH - backFontSize) / 2, backFontSize,
+            rgba(200, 200, 200));
+
+        // Help text
+        const helpText = '[ Tap card / Arrows + Enter ]';
+        const helpSize = h * 0.020;
+        const helpW = textWidth(ctx, helpText, helpSize);
+        drawText(ctx, helpText, (w - helpW) / 2, h * 0.95, helpSize, rgba(140, 140, 140));
+
+        // Cello assistant overlay
+        if (this.shopCelloVisible) {
+            this.drawCelloAssistant(ctx, w, h);
+        }
+    }
+
+    drawCelloAssistant(ctx, w, h) {
+        const isHelp = this.shopAssistantStep >= 4;
+
+        if (!isHelp) {
+            // Semi-transparent overlay only during tutorial
+            ctx.fillStyle = rgba(0, 0, 0, 160);
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        const dialogs = [
+            'Hi there! I am Cello, your shop assistant!\nWelcome to the Companion Shop!',
+            'Here you can buy Companions that will\nhelp you destroy blocks with projectiles!',
+            'Each companion fires differently:\nLinear - Zigzag - Side shots!',
+            'Collect coins from breaking blocks\nto buy them. Let us go shopping!',
+            'Any help?'
+        ];
+
+        const step = Math.min(this.shopAssistantStep, dialogs.length - 1);
+        const dialog = dialogs[step];
+
+        // Cello character
+        const celloX = isHelp ? w * 0.88 : w * 0.75;
+        const celloY = isHelp ? h * 0.82 : h * 0.35;
+
+        ctx.save();
+        ctx.translate(celloX, celloY);
+
+        const bobY = Math.sin(this.shopCelloAnimTimer * 3) * 5;
+        ctx.translate(0, bobY);
+
+        // Shadow
+        ctx.beginPath();
+        ctx.ellipse(0, 45, 25, 5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(0, 0, 0, 60);
+        ctx.fill();
+
+        // Body
+        fillRoundedRect(ctx, -20, -10, 40, 50, 8, rgba(60, 200, 255));
+        drawRoundedRect(ctx, -20, -10, 40, 50, 8);
+        ctx.strokeStyle = rgba(100, 230, 255, 200);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Face screen
+        fillRoundedRect(ctx, -15, -5, 30, 25, 4, rgba(10, 20, 40));
+
+        // Expressions
+        const isSleeping = this.shopIdleTimer > 5.0; // 5 seconds idle
+        const blinkPhase = this.shopCelloAnimTimer % 4;
+        const isBlinking = blinkPhase > 3.7 && blinkPhase < 3.9;
+
+        if (isSleeping) {
+            // Sleeping expression (closed eyes zZz)
+            ctx.strokeStyle = rgba(0, 255, 200);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-9, 7); ctx.lineTo(-6, 9); ctx.lineTo(-3, 7);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(3, 7); ctx.lineTo(6, 9); ctx.lineTo(9, 7);
+            ctx.stroke();
+
+            // Zzz text floating
+            const zBob = Math.sin(this.shopCelloAnimTimer * 2) * 5;
+            drawText(ctx, 'Z', 10, -20 + zBob, h * 0.015, rgba(0, 255, 200, 200));
+            drawText(ctx, 'z', 18, -25 + zBob, h * 0.010, rgba(0, 255, 200, 150));
+        } else if (isBlinking) {
+            ctx.fillStyle = rgba(0, 255, 200);
+            ctx.fillRect(-9, 6, 6, 2);
+            ctx.fillRect(3, 6, 6, 2);
+        } else {
+            const cycle = this.shopCelloAnimTimer % 6;
+            let lookX = 0;
+            let lookY = 0;
+            if (cycle < 1) { // Look Up
+                lookY = -1.5;
+            } else if (cycle > 3 && cycle < 4) { // Look Down
+                lookY = 1.5;
+            } else if (cycle > 4.5 && cycle < 5) { // Smile/Happy
+                ctx.strokeStyle = rgba(0, 255, 200);
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-9, 8); ctx.lineTo(-6, 6); ctx.lineTo(-3, 8);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(3, 8); ctx.lineTo(6, 6); ctx.lineTo(9, 8);
+                ctx.stroke();
+                lookX = null; // Skip drawing normal eyes
+            }
+
+            if (lookX !== null) {
+                // Happy/Normal eyes without pupils
+                ctx.beginPath();
+                ctx.arc(-6 + lookX, 7 + lookY, 3, 0, Math.PI * 2);
+                ctx.fillStyle = rgba(0, 255, 200);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(6 + lookX, 7 + lookY, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Mouth (Smile)
+        if (isSleeping) {
+            ctx.beginPath();
+            ctx.arc(0, 15, 3, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(0, 255, 200, 150);
+            ctx.fill();
+        } else {
+            ctx.beginPath();
+            ctx.arc(0, 12, 5, 0.1 * Math.PI, 0.9 * Math.PI);
+            ctx.strokeStyle = rgba(0, 255, 200);
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+        }
+
+        // Name tag
+        const nameTag = 'CELLO';
+        const nameSize = h * 0.018;
+        const nameTagW = textWidth(ctx, nameTag, nameSize);
+        drawText(ctx, nameTag, -nameTagW / 2, 30, nameSize, rgba(255, 255, 255, 200));
+
+        ctx.restore();
+
+        // Speech bubble
+        const bubbleW = isHelp ? w * 0.16 : w * 0.45;
+        const bubbleH = isHelp ? h * 0.10 : h * 0.32;
+        const bubbleX = isHelp ? celloX - bubbleW - w * 0.02 : celloX - bubbleW - w * 0.05;
+        const bubbleY = isHelp ? celloY - h * 0.06 : h * 0.25;
+
+        const bubbleAlpha = isHelp ? 245 : 200;
+
+        fillRoundedRect(ctx, bubbleX, bubbleY, bubbleW, bubbleH, 10, rgba(15, 20, 35, bubbleAlpha));
+        drawRoundedRect(ctx, bubbleX, bubbleY, bubbleW, bubbleH, 10);
+        ctx.strokeStyle = rgba(0, 200, 255, 160);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Bubble tail (pointing right towards Cello)
+        ctx.beginPath();
+        ctx.moveTo(bubbleX + bubbleW, bubbleY + bubbleH * 0.4);
+        ctx.lineTo(bubbleX + bubbleW + 15, bubbleY + bubbleH * 0.5);
+        ctx.lineTo(bubbleX + bubbleW, bubbleY + bubbleH * 0.6);
+        ctx.fillStyle = rgba(15, 20, 35, bubbleAlpha);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(bubbleX + bubbleW, bubbleY + bubbleH * 0.4);
+        ctx.lineTo(bubbleX + bubbleW + 15, bubbleY + bubbleH * 0.5);
+        ctx.lineTo(bubbleX + bubbleW, bubbleY + bubbleH * 0.6);
+        ctx.strokeStyle = rgba(0, 200, 255, 160);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Clear the overlapping border line
+        ctx.beginPath();
+        ctx.moveTo(bubbleX + bubbleW, bubbleY + bubbleH * 0.4 - 1);
+        ctx.lineTo(bubbleX + bubbleW, bubbleY + bubbleH * 0.6 + 1);
+        ctx.strokeStyle = rgba(15, 20, 35, bubbleAlpha);
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        ctx.stroke();
+
+        // Dialog text
+        const lines = dialog.split('\n');
+        const dialogSize = isHelp ? h * 0.025 : h * 0.030;
+        const lineHeight = dialogSize * 1.6;
+        const textStartY = isHelp ? bubbleY + (bubbleH - dialogSize) / 2 : bubbleY + bubbleH * 0.25;
+
+        for (let li = 0; li < lines.length; li++) {
+            const lineW = textWidth(ctx, lines[li], dialogSize);
+            drawText(ctx, lines[li], bubbleX + (bubbleW - lineW) / 2, textStartY + li * lineHeight, dialogSize,
+                rgba(220, 240, 255, isHelp ? 180 : 255));
+        }
+
+        if (!isHelp) {
+            // Step indicator
+            const stepText = `${step + 1}/${dialogs.length - 1}`;
+            const stepSize = h * 0.020;
+            const stepW = textWidth(ctx, stepText, stepSize);
+            drawText(ctx, stepText, bubbleX + bubbleW - stepW - 12, bubbleY + bubbleH - h * 0.04, stepSize,
+                rgba(100, 140, 180));
+
+            // Continue prompt
+            const contText = '[ Tap to continue ]';
+            const contSize = h * 0.022;
+            const contW = textWidth(ctx, contText, contSize);
+            const contPulse = (Math.sin(this.menuAnimTimer * 4) + 1) * 0.5;
+            drawText(ctx, contText, (w - contW) / 2, h * 0.72, contSize, rgba(255, 255, 255, 120 + contPulse * 130));
+        }
+    }
+
     // ─── Score Breakdown ──────────────────────────────
 
     calculateScoreBreakdown() {
@@ -1755,24 +3226,7 @@ class Game {
         // Starfield (parallax)
         this.drawStars(ctx);
 
-        // Menu decorative bricks
-        if (this.state === GameState.Menu) {
-            for (const b of this.menuDecorBricks) {
-                ctx.save();
-                ctx.translate(b.x, b.y);
-                ctx.scale(b.scale, b.scale);
-                // Glow
-                const glowGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, b.w);
-                glowGrad.addColorStop(0, rgba(b.color[0], b.color[1], b.color[2], 60));
-                glowGrad.addColorStop(1, rgba(b.color[0], b.color[1], b.color[2], 0));
-                ctx.fillStyle = glowGrad;
-                ctx.fillRect(-b.w, -b.h, b.w * 2, b.h * 2);
-
-                fillRoundedRect(ctx, -b.w / 2, -b.h / 2, b.w, b.h, b.r,
-                    rgba(b.color[0], b.color[1], b.color[2]));
-                ctx.restore();
-            }
-        }
+        // Menu decorative bricks removed
 
         // Rain
         this.drawRain(ctx);
@@ -1780,16 +3234,37 @@ class Game {
         // Game objects
         if (this.state === GameState.Playing || this.state === GameState.Paused ||
             this.state === GameState.StageClear || this.state === GameState.GameOver) {
-            this.drawGameObjects(ctx);
+            try {
+                this.drawGameObjects(ctx);
+            } catch(e) {
+                ctx.fillStyle = 'red';
+                ctx.font = '20px monospace';
+                ctx.fillText('drawGameObjects Error: ' + e.message, 10, 50);
+            }
         }
 
         // Confetti (drawn in game viewport)
-        this.drawConfetti(ctx);
+        try {
+            this.drawConfetti(ctx);
+        } catch(e) {
+            ctx.fillStyle = 'red';
+            ctx.font = '20px monospace';
+            ctx.fillText('drawConfetti Error: ' + e.message, 10, 80);
+        }
 
         ctx.restore();
 
         // ── UI VIEW (virtual window size) ──
-        this.drawUI(ctx, w, h);
+        try {
+            this.drawUI(ctx, w, h);
+        } catch(e) {
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = 'red';
+            ctx.font = '20px monospace';
+            ctx.fillText('drawUI Error: ' + e.message, 10, 110);
+            ctx.restore();
+        }
 
         ctx.restore();
 
@@ -1804,7 +3279,7 @@ class Game {
         const gridSpeed = 25;
         const gridSpacing = 20;
         const startY = (this.menuAnimTimer * gridSpeed) % gridSpacing;
-        const isMenu = this.state === GameState.Menu || this.state === GameState.Options;
+        const isMenu = this.state === GameState.Menu || this.state === GameState.Options || this.state === GameState.Shop;
         const alpha = isMenu ? 30 : 14;
         const color = rgba(0, 120, 255, alpha);
 
@@ -1945,6 +3420,13 @@ class Game {
         // Powerups
         this.drawPowerups(ctx);
 
+        // Coin drops
+        this.drawCoinDrops(ctx);
+
+        // Companion & Projectiles
+        this.drawCompanion(ctx);
+        this.drawCompanionProjectiles(ctx);
+
         // Particles
         this.drawParticles(ctx);
 
@@ -2010,32 +3492,14 @@ class Game {
             this.drawHUD(ctx, w, h);
         }
 
-        // ── Top-Left Pause Button ──
-        if (this.state === GameState.Playing || this.state === GameState.Paused) {
-            const pBtnX = 10 * (w / 854);
-            const pBtnY = 8 * (h / 480);
-            const pBtnW = 75 * (w / 854);
-            const pBtnH = 32 * (h / 480);
-
-            const isPaused = this.state === GameState.Paused;
-            fillRoundedRect(ctx, pBtnX, pBtnY, pBtnW, pBtnH, 4,
-                rgba(0, 180, 255, isPaused ? 50 : 25));
-            drawRoundedRect(ctx, pBtnX, pBtnY, pBtnW, pBtnH, 4);
-            ctx.strokeStyle = rgba(0, 220, 255, isPaused ? 220 : 120);
-            ctx.lineWidth = isPaused ? 2 : 1;
-            ctx.stroke();
-
-            const pBtnText = '❚❚ PAUSE';
-            const pBtnFontSize = h * 0.024;
-            const pbW = textWidth(ctx, pBtnText, pBtnFontSize);
-            drawText(ctx, pBtnText, pBtnX + (pBtnW - pbW) / 2, pBtnY + (pBtnH - pBtnFontSize) / 2, pBtnFontSize,
-                rgba(0, 240, 255, 230));
-        }
+        // ── Top-Left Pause Button (Drawn in drawHUD instead, so removed from here) ──
 
         if (this.state === GameState.Menu) {
             this.drawMenu(ctx, w, h);
         } else if (this.state === GameState.Options) {
             this.drawOptions(ctx, w, h);
+        } else if (this.state === GameState.Shop) {
+            this.drawShop(ctx, w, h);
         } else if (this.state === GameState.Paused) {
             this.drawPauseMenu(ctx, w, h);
         }
@@ -2048,130 +3512,110 @@ class Game {
     // ─── Menu ─────────────────────────────────────────
 
     drawMenu(ctx, w, h) {
-        // Title with bloom/glow effect
-        const titleSize = h * 0.085;
-        const titleText = 'RICOCHET';
-        const titleW = textWidth(ctx, titleText, titleSize);
-        const titleX = (w - titleW) / 2;
-        const titleY = h * 0.12;
+        // ── Background vignette ──
+        const vigGrad = ctx.createRadialGradient(w * 0.4, h * 0.45, 0, w * 0.4, h * 0.45, w * 0.75);
+        vigGrad.addColorStop(0, rgba(0, 0, 0, 0));
+        vigGrad.addColorStop(1, rgba(0, 0, 0, 180));
+        ctx.fillStyle = vigGrad;
+        ctx.fillRect(0, 0, w, h);
 
-        // Multi-layer bloom
-        const bloomPulse = (Math.sin(this.menuAnimTimer * 2) + 1) * 0.5;
-        const bloomLayers = [
-            { offset: 4, alpha: 30 + bloomPulse * 20, color: [0, 100, 255] },
-            { offset: 3, alpha: 50 + bloomPulse * 30, color: [0, 160, 255] },
-            { offset: 2, alpha: 80 + bloomPulse * 40, color: [0, 200, 255] },
-            { offset: 1, alpha: 120 + bloomPulse * 60, color: [100, 220, 255] },
-        ];
+        // ── Decorative diagonal lines REMOVED ──
 
-        for (const layer of bloomLayers) {
-            drawText(ctx, titleText, titleX + layer.offset, titleY + layer.offset, titleSize,
-                rgba(layer.color[0], layer.color[1], layer.color[2], layer.alpha));
-            drawText(ctx, titleText, titleX - layer.offset * 0.5, titleY + layer.offset * 0.5, titleSize,
-                rgba(layer.color[0], layer.color[1], layer.color[2], layer.alpha * 0.5));
+        // ── ARCOSTER logo image (top center) ──
+        if (!this._logoImg) {
+            this._logoImg = new Image();
+            this._logoImg.src = 'img/arcoster_logo.png';
+        }
+        const bloomPulse = (Math.sin(this.menuAnimTimer * 1.8) + 1) * 0.5;
+        if (this._logoImg.complete && this._logoImg.naturalWidth > 0) {
+            const logoAspect = this._logoImg.naturalWidth / this._logoImg.naturalHeight;
+            const logoH = h * 0.22;
+            const logoW = logoH * logoAspect;
+            const logoX = (w - logoW) / 2;
+            const logoY = h * 0.03;
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen'; // black background becomes transparent
+            ctx.globalAlpha = 0.95 + bloomPulse * 0.05;
+            ctx.drawImage(this._logoImg, logoX, logoY, logoW, logoH);
+            ctx.restore();
         }
 
-        // Color cycling title
-        const hueShift = this.menuAnimTimer * 0.3;
-        const r = Math.floor(255 * (0.5 + 0.5 * Math.sin(hueShift)));
-        const g = Math.floor(215 + 40 * Math.sin(hueShift + 2));
-        drawText(ctx, titleText, titleX, titleY, titleSize, rgba(255, g, r > 200 ? 0 : r));
-
-        // Subtitle
-        const subText = 'ARCADE BLOCK SIMULATOR';
-        const subSize = h * 0.024;
+        // ── Subtitle ──
+        const subText = 'Galaxy Block Blaster';
+        const subSize = h * 0.022;
         const subW = textWidth(ctx, subText, subSize);
-        drawText(ctx, subText, (w - subW) / 2, h * 0.23, subSize, rgba(0, 255, 180, 200));
+        drawText(ctx, subText, (w - subW) / 2, h * 0.27, subSize, rgba(180, 200, 255, 160));
 
-        // High Score
-        const hsText = `HIGH SCORE: ${String(this.highScore).padStart(6, '0')}`;
+        // ── Scores row ──
+        const infoY = h * 0.30;
+        const hsText = `BEST: ${String(this.highScore).padStart(6, '0')}`;
         const hsSize = h * 0.022;
-        const hsw = textWidth(ctx, hsText, hsSize);
-        drawText(ctx, hsText, (w - hsw) / 2, h * 0.30, hsSize, rgba(255, 255, 255, 150));
+        const hsW = textWidth(ctx, hsText, hsSize);
+        drawText(ctx, hsText, (w - hsW) / 2, infoY, hsSize, rgba(200, 200, 200, 160));
 
-        // ── Cyberpunk Neon Glass Panel Menu Buttons ──
-        const menuSize = h * 0.038;
-        const items = ['PLAY', 'OPTIONS', 'EXIT'];
-        const positions = [0.42, 0.54, 0.66];
-        const btnW = w * 0.28;
-        const btnH = h * 0.085;
-        const btnColors = [
-            [0, 255, 180],   // Cyan-green for PLAY
-            [0, 180, 255],   // Blue for OPTIONS
-            [255, 80, 100],  // Red for EXIT
+        // ── Menu items (left-aligned, sketch style) ──
+        const menuItems = ['START GAME', 'SHOP', 'OPTION', 'EXIT GAME'];
+        const menuColors = [
+            [80, 255, 180],   // Start = mint green
+            [255, 200, 50],   // Shop  = amber gold
+            [100, 180, 255],  // Option = sky blue
+            [255, 80, 90],    // Exit  = coral red
         ];
 
-        for (let i = 0; i < items.length; i++) {
+        const menuStartY = h * 0.36;
+        const menuStepY = h * 0.125;
+        const menuLeftX = w * 0.12;
+        const menuFontSize = h * 0.050;
+        const tickSize = h * 0.020;
+
+        for (let i = 0; i < menuItems.length; i++) {
             const selected = this.menuSelectedIndex === i;
-            const btnX = (w - btnW) / 2;
-            const btnY = h * positions[i] - btnH * 0.35;
-            const bc = btnColors[i];
+            const itemY = menuStartY + i * menuStepY;
+            const bc = menuColors[i];
 
-            ctx.save();
-
-            // Glass panel background
-            const glassAlpha = selected ? 50 : 25;
-            fillRoundedRect(ctx, btnX, btnY, btnW, btnH, 4,
-                rgba(bc[0], bc[1], bc[2], glassAlpha));
-
-            // Border glow
-            const borderAlpha = selected ? 220 : 80;
-            const pulseAlpha = selected ? borderAlpha + Math.sin(this.menuAnimTimer * 5) * 40 : borderAlpha;
-            drawRoundedRect(ctx, btnX, btnY, btnW, btnH, 4);
-            ctx.strokeStyle = rgba(bc[0], bc[1], bc[2], pulseAlpha);
-            ctx.lineWidth = selected ? 2 : 1;
-            ctx.stroke();
-
-            // Outer glow for selected
+            // Selected row highlight streak
             if (selected) {
-                drawRoundedRect(ctx, btnX - 2, btnY - 2, btnW + 4, btnH + 4, 6);
-                ctx.strokeStyle = rgba(bc[0], bc[1], bc[2], 40 + Math.sin(this.menuAnimTimer * 4) * 20);
-                ctx.lineWidth = 3;
-                ctx.stroke();
+                const streakGrad = ctx.createLinearGradient(0, itemY - menuFontSize * 0.3, w, itemY + menuFontSize * 1.1);
+                streakGrad.addColorStop(0, rgba(0, 0, 0, 0));
+                streakGrad.addColorStop(0.08, rgba(bc[0], bc[1], bc[2], 30));
+                streakGrad.addColorStop(0.5, rgba(bc[0], bc[1], bc[2], 50));
+                streakGrad.addColorStop(0.92, rgba(bc[0], bc[1], bc[2], 30));
+                streakGrad.addColorStop(1, rgba(0, 0, 0, 0));
+                ctx.fillStyle = streakGrad;
+                ctx.fillRect(0, itemY - menuFontSize * 0.3, w, menuFontSize * 1.4);
             }
 
-            // Scanline effect inside button
-            ctx.save();
-            drawRoundedRect(ctx, btnX, btnY, btnW, btnH, 4);
-            ctx.clip();
-            const scanlineOffset = (this.menuAnimTimer * 30) % 6;
-            ctx.strokeStyle = rgba(255, 255, 255, 8);
-            ctx.lineWidth = 0.5;
-            for (let sy = scanlineOffset; sy < btnH; sy += 3) {
+            // Tick marks removed as requested
+
+            // Item text
+            const lw = textWidth(ctx, menuItems[i], menuFontSize);
+            const textX = (w - lw) / 2;
+            const textAlpha = selected ? 255 : 160;
+
+            if (selected) {
+                // Glow pass behind text
+                drawText(ctx, menuItems[i], textX + 2, itemY + 2, menuFontSize, rgba(bc[0], bc[1], bc[2], 60));
+            }
+            drawText(ctx, menuItems[i], textX, itemY, menuFontSize,
+                rgba(bc[0], bc[1], bc[2], textAlpha));
+
+            // Underline for selected
+            if (selected) {
+                const underPulse = 0.5 + 0.5 * Math.sin(this.menuAnimTimer * 5);
+                ctx.strokeStyle = rgba(bc[0], bc[1], bc[2], 160 + underPulse * 95);
+                ctx.lineWidth = 1.5;
                 ctx.beginPath();
-                ctx.moveTo(btnX, btnY + sy);
-                ctx.lineTo(btnX + btnW, btnY + sy);
+                ctx.moveTo(textX, itemY + menuFontSize + 1);
+                ctx.lineTo(textX + lw, itemY + menuFontSize + 1);
                 ctx.stroke();
             }
-            ctx.restore();
-
-            // Glass highlight (top reflection)
-            const highlightGrad = ctx.createLinearGradient(btnX, btnY, btnX, btnY + btnH * 0.4);
-            highlightGrad.addColorStop(0, rgba(255, 255, 255, selected ? 30 : 15));
-            highlightGrad.addColorStop(1, rgba(255, 255, 255, 0));
-            fillRoundedRect(ctx, btnX + 1, btnY + 1, btnW - 2, btnH * 0.4, 3, highlightGrad);
-
-            // Text
-            const label = items[i];
-            const itemSize = menuSize;
-            const lw = textWidth(ctx, label, itemSize);
-            const color = selected ? rgba(255, 255, 255) : rgba(bc[0], bc[1], bc[2], 200);
-            drawText(ctx, label, (w - lw) / 2, btnY + (btnH - itemSize) / 2, itemSize, color);
-
-            if (selected) {
-                const arrowPulse = Math.sin(this.menuAnimTimer * 6) * 4;
-                drawText(ctx, '▶', btnX + 15 + arrowPulse, btnY + (btnH - itemSize) / 2, itemSize, rgba(bc[0], bc[1], bc[2]));
-                drawText(ctx, '◀', btnX + btnW - 15 - itemSize - arrowPulse, btnY + (btnH - itemSize) / 2, itemSize, rgba(bc[0], bc[1], bc[2]));
-            }
-
-            ctx.restore();
         }
 
-        // Help text
-        const helpText = '[ Use Up/Down & Enter / Tap to Select ]';
-        const helpSize = h * 0.024;
-        const hw = textWidth(ctx, helpText, helpSize);
-        drawText(ctx, helpText, (w - hw) / 2, h * 0.90, helpSize, rgba(180, 180, 180));
+        // ── Bottom hint ──
+        const hintText = 'Tap / Arrow Keys to navigate';
+        const hintSize = h * 0.020;
+        const hintW = textWidth(ctx, hintText, hintSize);
+        drawText(ctx, hintText, (w - hintW) / 2, h * 0.938, hintSize, rgba(120, 120, 140, 160));
     }
 
     // ─── Pause Menu ──────────────────────────────────
@@ -2287,131 +3731,195 @@ class Game {
     // ─── Options ──────────────────────────────────────
 
     drawOptions(ctx, w, h) {
-        // Title
-        const titleText = '- OPTIONS -';
+        // ── Background vignette ──
+        const vigGrad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.7);
+        vigGrad.addColorStop(0, rgba(0, 0, 0, 0));
+        vigGrad.addColorStop(1, rgba(0, 0, 0, 160));
+        ctx.fillStyle = vigGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // ── Title ──
+        const titleText = '- OPTION -';
         const titleSize = h * 0.055;
         const titleW = textWidth(ctx, titleText, titleSize);
-        drawText(ctx, titleText, (w - titleW) / 2, h * 0.08, titleSize, rgba(0, 220, 255));
+        drawText(ctx, titleText, (w - titleW) / 2 + 2, h * 0.065 + 2, titleSize, rgba(255, 120, 0, 60));
+        drawText(ctx, titleText, (w - titleW) / 2, h * 0.065, titleSize, rgba(255, 180, 60, 230));
 
-        // Options box — glass panel style
-        const boxW = w * 0.65;
-        const boxH = h * 0.68;
-        const boxX = (w - boxW) / 2;
-        const boxY = h * 0.18;
+        // Subtitle tag
+        const subTag = 'Game Settings';
+        const subTagSize = h * 0.022;
+        const subTagW = textWidth(ctx, subTag, subTagSize);
+        drawText(ctx, subTag, (w - subTagW) / 2, h * 0.135, subTagSize, rgba(200, 200, 220, 140));
 
-        // Glass background
-        fillRoundedRect(ctx, boxX, boxY, boxW, boxH, 6, rgba(12, 14, 24, 240));
+        // Separator
+        const sepY = h * 0.165;
+        ctx.strokeStyle = rgba(255, 120, 0, 80);
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(w * 0.1, sepY); ctx.lineTo(w * 0.9, sepY); ctx.stroke();
 
-        // Border glow
-        drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 6);
-        ctx.strokeStyle = rgba(0, 200, 255, 120);
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        // ── Settings rows ──
+        const rowStartY = h * 0.21;
+        const rowStep = h * 0.145;
+        const labelX = w * 0.10;
+        const valueX = w * 0.60;
+        const rowFontSz = h * 0.030;
+        const selColor = rgba(255, 210, 60);
+        const normColor = rgba(180, 185, 200);
 
-        // Scanlines
-        ctx.save();
-        drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 6);
-        ctx.clip();
-        ctx.strokeStyle = rgba(255, 255, 255, 5);
-        ctx.lineWidth = 0.5;
-        for (let sy = 0; sy < boxH; sy += 2.5) {
-            ctx.beginPath();
-            ctx.moveTo(boxX, boxY + sy);
-            ctx.lineTo(boxX + boxW, boxY + sy);
-            ctx.stroke();
-        }
-        ctx.restore();
-
-        const optFontSize = h * 0.032;
-        const activeColor = rgba(255, 255, 0);
-        const normColor = rgba(200, 200, 200);
+        // Row background helper
+        const drawRowBg = (idx, selected) => {
+            const ry = rowStartY + idx * rowStep - rowFontSz * 0.3;
+            const rowH = rowFontSz * 1.8;
+            if (selected) {
+                fillRoundedRect(ctx, w * 0.06, ry, w * 0.88, rowH, 4, rgba(255, 140, 0, 18));
+                drawRoundedRect(ctx, w * 0.06, ry, w * 0.88, rowH, 4);
+                ctx.strokeStyle = rgba(255, 140, 0, 80);
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            } else {
+                fillRoundedRect(ctx, w * 0.06, ry, w * 0.88, rowH, 4, rgba(255, 255, 255, 5));
+            }
+        };
 
         // 1. Paddle Color
-        const selected0 = this.optionSelectedIndex === 0;
-        drawText(ctx, 'Paddle Color:', boxX + boxW * 0.08, boxY + h * 0.08, optFontSize,
-            selected0 ? activeColor : normColor);
-        const colorLabel = (selected0 ? '< ' : '  ') + this.paddleColors[this.selectedColorIndex].label + (selected0 ? ' >' : '  ');
-        drawText(ctx, colorLabel, boxX + boxW * 0.55, boxY + h * 0.08, optFontSize,
-            selected0 ? activeColor : normColor);
+        const sel0 = this.optionSelectedIndex === 0;
+        drawRowBg(0, sel0);
+        drawText(ctx, 'Paddle Color', labelX, rowStartY, rowFontSz, sel0 ? selColor : normColor);
+        const colorLabel = (sel0 ? '< ' : '  ') + this.paddleColors[this.selectedColorIndex].label + (sel0 ? ' >' : '  ');
+        drawText(ctx, colorLabel, valueX, rowStartY, rowFontSz, sel0 ? selColor : normColor);
+
+        // Color preview dot
+        const dotColor = this.paddleColors[this.selectedColorIndex].rgb || [0, 200, 255];
+        ctx.beginPath();
+        ctx.arc(valueX - 14, rowStartY + rowFontSz * 0.5, 5, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(dotColor[0] ?? 0, dotColor[1] ?? 200, dotColor[2] ?? 255);
+        ctx.fill();
 
         // 2. Volume
-        const selected1 = this.optionSelectedIndex === 1;
-        drawText(ctx, 'Volume:', boxX + boxW * 0.08, boxY + h * 0.18, optFontSize,
-            selected1 ? activeColor : normColor);
+        const sel1 = this.optionSelectedIndex === 1;
+        const volY = rowStartY + rowStep;
+        drawRowBg(1, sel1);
+        drawText(ctx, 'Volume', labelX, volY, rowFontSz, sel1 ? selColor : normColor);
 
-        // Volume text
-        const volText = `${this.volume}%`;
-        const volTextW = textWidth(ctx, volText, optFontSize);
-        drawText(ctx, volText, boxX + boxW * 0.50 - volTextW - 10, boxY + h * 0.18, optFontSize,
-            selected1 ? activeColor : normColor);
+        const volPct = `${this.volume}%`;
+        const volPctW = textWidth(ctx, volPct, rowFontSz * 0.9);
+        drawText(ctx, volPct, valueX - volPctW - 8, volY, rowFontSz * 0.9, sel1 ? selColor : normColor);
 
-        // Interactive volume bar track
-        const barX = boxX + boxW * 0.50;
-        const barY = boxY + h * 0.185;
-        const barW = boxW * 0.40;
-        const barH = 14;
+        const barX = valueX;
+        const barY2 = volY + rowFontSz * 0.25;
+        const barW = w * 0.28;
+        const barH2 = 10;
 
-        fillRoundedRect(ctx, barX, barY, barW, barH, 4, rgba(20, 25, 45, 230));
-
-        // Fill track
-        const fillW = Math.max(0, barW * (this.volume / 100));
-        if (fillW > 0) {
-            fillRoundedRect(ctx, barX, barY, fillW, barH, 4, rgba(0, 220, 255, 230));
+        // Track
+        fillRoundedRect(ctx, barX, barY2, barW, barH2, 4, rgba(30, 30, 45, 230));
+        // Fill
+        const fillW2 = Math.max(0, barW * (this.volume / 100));
+        if (fillW2 > 0) {
+            const barGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+            barGrad.addColorStop(0, rgba(255, 140, 0, 220));
+            barGrad.addColorStop(1, rgba(255, 220, 60, 220));
+            fillRoundedRect(ctx, barX, barY2, fillW2, barH2, 4, barGrad);
         }
-
-        // Border
-        drawRoundedRect(ctx, barX, barY, barW, barH, 4);
-        ctx.strokeStyle = rgba(0, 200, 255, selected1 ? 220 : 100);
-        ctx.lineWidth = selected1 ? 2 : 1;
+        drawRoundedRect(ctx, barX, barY2, barW, barH2, 4);
+        ctx.strokeStyle = rgba(255, 140, 0, sel1 ? 200 : 80);
+        ctx.lineWidth = sel1 ? 1.5 : 1;
         ctx.stroke();
 
-        // Glowing Slider Handle Knob
-        const knobX = barX + fillW;
+        // Knob
+        const knobX2 = barX + fillW2;
         ctx.beginPath();
-        ctx.arc(knobX, barY + barH / 2, 9, 0, Math.PI * 2);
-        ctx.fillStyle = selected1 ? rgba(255, 255, 0) : rgba(0, 240, 255);
+        ctx.arc(knobX2, barY2 + barH2 / 2, 7, 0, Math.PI * 2);
+        ctx.fillStyle = sel1 ? rgba(255, 220, 60) : rgba(255, 140, 0);
         ctx.fill();
-        ctx.strokeStyle = rgba(255, 255, 255, 230);
+        ctx.strokeStyle = rgba(255, 255, 255, 200);
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
         // 3. Difficulty
-        const selected2 = this.optionSelectedIndex === 2;
-        drawText(ctx, 'Difficulty:', boxX + boxW * 0.08, boxY + h * 0.28, optFontSize,
-            selected2 ? activeColor : normColor);
-        const diffText = (selected2 ? '< ' : '  ') + this.difficulties[this.difficulty] + (selected2 ? ' >' : '  ');
-        const diffColors = [rgba(0, 255, 100), rgba(255, 200, 0), rgba(255, 60, 60)];
-        drawText(ctx, diffText, boxX + boxW * 0.55, boxY + h * 0.28, optFontSize,
-            selected2 ? diffColors[this.difficulty] : normColor);
+        const sel2 = this.optionSelectedIndex === 2;
+        const diffY = rowStartY + rowStep * 2;
+        drawRowBg(2, sel2);
+        drawText(ctx, 'Difficulty', labelX, diffY, rowFontSz, sel2 ? selColor : normColor);
+        const diffText = (sel2 ? '< ' : '  ') + this.difficulties[this.difficulty] + (sel2 ? ' >' : '  ');
+        const diffColors = [rgba(80, 255, 140), rgba(255, 200, 0), rgba(255, 60, 80)];
+        drawText(ctx, diffText, valueX, diffY, rowFontSz, sel2 ? diffColors[this.difficulty] : normColor);
 
-        // Back button — neon glass style
-        const selectedBack = this.optionSelectedIndex === 3;
-        const backBtnW = w * 0.22;
+        // Difficulty pip indicators
+        for (let d = 0; d < 3; d++) {
+            const pipX = valueX - 30 + d * 8;
+            const pipY = diffY + rowFontSz * 0.5;
+            ctx.beginPath();
+            ctx.arc(pipX, pipY, 3, 0, Math.PI * 2);
+            ctx.fillStyle = d <= this.difficulty ? rgba(255, 180, 0) : rgba(60, 60, 80);
+            ctx.fill();
+        }
+
+        // 4. Button Size
+        const sel3 = this.optionSelectedIndex === 3;
+        const sizeY = rowStartY + rowStep * 3;
+        drawRowBg(3, sel3);
+        drawText(ctx, 'Button Size', labelX, sizeY, rowFontSz, sel3 ? selColor : normColor);
+
+        const sizePct = `${this.btnScale}%`;
+        const sizePctW = textWidth(ctx, sizePct, rowFontSz * 0.9);
+        drawText(ctx, sizePct, valueX - sizePctW - 8, sizeY, rowFontSz * 0.9, sel3 ? selColor : normColor);
+
+        const sbarX = valueX;
+        const sbarY2 = sizeY + rowFontSz * 0.25;
+        const sbarW = w * 0.28;
+        const sbarH2 = 10;
+
+        fillRoundedRect(ctx, sbarX, sbarY2, sbarW, sbarH2, 4, rgba(30, 30, 45, 230));
+        const sfillW2 = Math.max(0, sbarW * ((this.btnScale - 90) / 30));
+        if (sfillW2 > 0) {
+            const barGrad = ctx.createLinearGradient(sbarX, 0, sbarX + sbarW, 0);
+            barGrad.addColorStop(0, rgba(255, 140, 0, 220));
+            barGrad.addColorStop(1, rgba(255, 220, 60, 220));
+            fillRoundedRect(ctx, sbarX, sbarY2, sfillW2, sbarH2, 4, barGrad);
+        }
+        drawRoundedRect(ctx, sbarX, sbarY2, sbarW, sbarH2, 4);
+        ctx.strokeStyle = rgba(255, 140, 0, sel3 ? 200 : 80);
+        ctx.lineWidth = sel3 ? 1.5 : 1;
+        ctx.stroke();
+
+        const sknobX2 = sbarX + sfillW2;
+        ctx.beginPath();
+        ctx.arc(sknobX2, sbarY2 + sbarH2 / 2, 7, 0, Math.PI * 2);
+        ctx.fillStyle = sel3 ? rgba(255, 220, 60) : rgba(255, 140, 0);
+        ctx.fill();
+        ctx.strokeStyle = rgba(255, 255, 255, 200);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // ── Back button ──
+        const selBack = this.optionSelectedIndex === 4;
+        const backY = h * 0.78;
+        const backBtnW = w * 0.30;
         const backBtnH = h * 0.065;
         const backBtnX = (w - backBtnW) / 2;
-        const backBtnY = boxY + boxH * 0.83;
 
-        fillRoundedRect(ctx, backBtnX, backBtnY, backBtnW, backBtnH, 4,
-            rgba(0, 180, 255, selectedBack ? 40 : 15));
-        drawRoundedRect(ctx, backBtnX, backBtnY, backBtnW, backBtnH, 4);
-        ctx.strokeStyle = rgba(0, 180, 255, selectedBack ? 200 : 60);
-        ctx.lineWidth = selectedBack ? 2 : 1;
+        fillRoundedRect(ctx, backBtnX, backY, backBtnW, backBtnH, 5,
+            rgba(255, 120, 0, selBack ? 40 : 15));
+        drawRoundedRect(ctx, backBtnX, backY, backBtnW, backBtnH, 5);
+        ctx.strokeStyle = rgba(255, 140, 0, selBack ? 220 : 70);
+        ctx.lineWidth = selBack ? 2 : 1;
         ctx.stroke();
 
         const backText = 'BACK TO MENU';
-        const backFontSize = h * 0.032;
-        const bw2 = textWidth(ctx, backText, backFontSize);
-        drawText(ctx, backText, (w - bw2) / 2, backBtnY + (backBtnH - backFontSize) / 2, backFontSize,
-            selectedBack ? rgba(255, 255, 255) : rgba(150, 150, 150));
+        const backFontSz = h * 0.030;
+        const bw2 = textWidth(ctx, backText, backFontSz);
+        drawText(ctx, backText, (w - bw2) / 2, backY + (backBtnH - backFontSz) / 2, backFontSz,
+            selBack ? rgba(255, 255, 255) : rgba(200, 160, 60));
 
-        // Help text
-        const helpText = '[Use Arrows to navigate and change options]';
-        const helpSize = h * 0.024;
+        // ── Help ──
+        const helpText = '[ Arrow keys to navigate | Left/Right to change ]';
+        const helpSize = h * 0.020;
         const helpW = textWidth(ctx, helpText, helpSize);
-        drawText(ctx, helpText, (w - helpW) / 2, h * 0.90, helpSize, rgba(180, 180, 180));
+        drawText(ctx, helpText, (w - helpW) / 2, h * 0.92, helpSize, rgba(120, 120, 140, 160));
     }
 
     // ─── Stage Clear & Game Over Overlay ─────────────────
+
 
     drawOverlay(ctx, w, h) {
         ctx.save();
@@ -2508,196 +4016,93 @@ class Game {
     // ─── HUD Sidebar ──────────────────────────────────
 
     drawHUD(ctx, w, h) {
-        const sbX = w * 0.78;
-        const sbW = w * 0.22;
-        const frameThick = 10 * (w / 854);
+        // Overlay HUD (Neat & Colorful, ZZZ inspired)
 
-        // ── Panel backgrounds ──
-        // Top panel
-        ctx.fillStyle = rgba(0, 0, 0);
-        ctx.fillRect(sbX, 0, sbW, h * 0.25);
-        // Middle panel
-        ctx.fillStyle = rgba(14, 20, 35);
-        ctx.fillRect(sbX, h * 0.25, sbW, h * 0.50);
-        // Bottom panel
-        ctx.fillStyle = rgba(6, 6, 8);
-        ctx.fillRect(sbX, h * 0.75, sbW, h * 0.25);
+        const uiY = h * 0.04;
+        const iconSize = h * 0.055;
 
-        // ── Metallic frames ──
-        const steelColor = rgba(80, 85, 96);
-        ctx.fillStyle = steelColor;
-        ctx.fillRect(sbX, 0, frameThick, h);
-        ctx.fillRect(w - frameThick, 0, frameThick, h);
-        ctx.fillRect(sbX, 0, sbW, frameThick);
-        ctx.fillRect(sbX, h - frameThick, sbW, frameThick);
-        ctx.fillRect(sbX, h * 0.25 - frameThick / 2, sbW, frameThick);
-        ctx.fillRect(sbX, h * 0.75 - frameThick / 2, sbW, frameThick);
+        // ── Top-left: Pause icon & Lives bar ──
+        const pauseX = w * 0.03;
+        const pauseW = iconSize * 1.5;
 
-        // ── Chrome reflections & shadows ──
-        const reflColor = rgba(220, 225, 235, 140);
-        const shadColor = rgba(35, 38, 45, 180);
+        // Pause button background
+        fillRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 8, rgba(20, 25, 35, 200));
+        drawRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 8);
+        ctx.strokeStyle = rgba(131, 137, 145, 180);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
 
-        ctx.fillStyle = reflColor;
-        ctx.fillRect(sbX + frameThick / 2 - 0.75, 0, 1.5, h);
-        ctx.fillStyle = shadColor;
-        ctx.fillRect(sbX + frameThick / 2 + 1.25, 0, 1.5, h);
+        // Pause bars
+        ctx.fillStyle = rgba(131, 137, 145, 255);
+        ctx.fillRect(pauseX + pauseW * 0.35, uiY + iconSize * 0.3, pauseW * 0.12, iconSize * 0.4);
+        ctx.fillRect(pauseX + pauseW * 0.55, uiY + iconSize * 0.3, pauseW * 0.12, iconSize * 0.4);
 
-        ctx.fillStyle = reflColor;
-        ctx.fillRect(w - frameThick / 2 - 0.75, 0, 1.5, h);
-        ctx.fillStyle = shadColor;
-        ctx.fillRect(w - frameThick / 2 + 1.25, 0, 1.5, h);
+        // Lives Bar
+        const livesX = pauseX + pauseW + 8;
+        const livesW = w * 0.22;
+        const livesH = iconSize * 0.7;
+        const livesY = uiY + (iconSize - livesH) / 2;
 
-        const dividerYs = [frameThick / 2, h * 0.25, h * 0.75, h - frameThick / 2];
-        for (const dy of dividerYs) {
-            ctx.fillStyle = reflColor;
-            ctx.fillRect(sbX, dy - 0.75, sbW, 1.5);
-            ctx.fillStyle = shadColor;
-            ctx.fillRect(sbX, dy + 1.25, sbW, 1.5);
+        fillRoundedRect(ctx, livesX, livesY, livesW, livesH, livesH / 2, rgba(20, 25, 35, 200));
+        drawRoundedRect(ctx, livesX, livesY, livesW, livesH, livesH / 2);
+        ctx.strokeStyle = rgba(100, 255, 100, 150);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Fill lives segments
+        const maxLives = 5;
+        const segGap = 3;
+        const segW = (livesW - 6 - segGap * (maxLives - 1)) / maxLives;
+        for (let i = 0; i < maxLives; i++) {
+            const hasLife = i < this.lives;
+            ctx.fillStyle = hasLife ? rgba(50, 255, 100, 240) : rgba(50, 50, 60, 150);
+            const sx = livesX + 3 + i * (segW + segGap);
+            const r = (i === 0 || i === maxLives - 1) ? (livesH - 6) / 2 : 2;
+            fillRoundedRect(ctx, sx, livesY + 3, segW, livesH - 6, r, ctx.fillStyle);
         }
 
-        // ── Bevel highlights ──
-        this.drawBevelHighlight(ctx, sbX, 0, frameThick, h);
-        this.drawBevelHighlight(ctx, w - frameThick, 0, frameThick, h);
-        this.drawBevelHighlight(ctx, sbX, h * 0.25 - frameThick / 2, sbW, frameThick);
-        this.drawBevelHighlight(ctx, sbX, h * 0.75 - frameThick / 2, sbW, frameThick);
+        // ── Below Top-left: Score & Combo ──
+        const scoreText = `${this.score} PTS`;
+        const scoreSize = h * 0.045;
+        drawText(ctx, scoreText, w * 0.03, uiY + iconSize + 25, scoreSize, rgba(255, 210, 0, 255));
 
-        // ── Rivets ──
-        const rxLeft = sbX + frameThick / 2;
-        const rxRight = w - frameThick / 2;
-        for (let ry = h * 0.05; ry < h; ry += h * 0.15) {
-            this.drawRivet(ctx, rxLeft, ry, h);
-            this.drawRivet(ctx, rxRight, ry, h);
+        if (this.combo > 1) {
+            const comboText = `COMBO x${this.combo}`;
+            const comboSize = h * 0.035;
+            const comboColor = this.combo >= 5 ? rgba(255, 50, 255) :
+                this.combo >= 3 ? rgba(255, 150, 0) : rgba(0, 255, 200);
+            drawText(ctx, comboText, w * 0.03, uiY + iconSize + 25 + scoreSize + 4, comboSize, comboColor);
         }
-        this.drawRivet(ctx, sbX + sbW * 0.3, h * 0.25, h);
-        this.drawRivet(ctx, sbX + sbW * 0.7, h * 0.25, h);
-        this.drawRivet(ctx, sbX + sbW * 0.3, h * 0.75, h);
-        this.drawRivet(ctx, sbX + sbW * 0.7, h * 0.75, h);
 
-        // ── Title text (Centered inside Top Panel - RICOCHET ONLY) ──
-        const hudTitleSize = h * 0.040;
-        const hudTitle = 'RICOCHET';
-        const htW = textWidth(ctx, hudTitle, hudTitleSize);
-        const htX = sbX + (sbW - htW) / 2;
-        const titleY = (h * 0.25 - hudTitleSize) / 2;
-        drawText(ctx, hudTitle, htX + 1.5, titleY + 1.5, hudTitleSize, rgba(0, 120, 255, 180));
-        drawText(ctx, hudTitle, htX, titleY, hudTitleSize, rgba(255, 220, 0));
-
-        // ── Stats Panel (Mathematically Symmetrical Layout inside Middle Grid) ──
-        const headerSize = h * 0.022;
-        const valueSize = h * 0.030;
-        const bpW = sbW - frameThick * 2 - 14 * (w / 854);
-        const bpH = valueSize * 1.30;
-        const bpX = sbX + (sbW - bpW) / 2;
-        const statX = bpX;
-        const txOff = 8 * (w / 854);
-        const tyOff = 2.5 * (h / 480);
-
-        const dimLED = rgba(10, 50, 70, 70);
-        const brightLED = rgba(0, 240, 255);
-        const goldLabel = rgba(255, 220, 0);
-        const bpFill = rgba(8, 12, 24);
-        const bpOutline = rgba(0, 180, 255, 100);
-
-        // 1. LIVES (Symmetrical margin from top frame)
-        const livesLabY = h * 0.2815;
-        const livesBoxY = h * 0.3075;
-        drawText(ctx, 'LIVES', statX, livesLabY, headerSize, goldLabel);
-        ctx.fillStyle = bpFill;
-        ctx.fillRect(bpX, livesBoxY, bpW, bpH);
-        ctx.strokeStyle = bpOutline;
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(bpX, livesBoxY, bpW, bpH);
-
-        drawText(ctx, '00', bpX + txOff, livesBoxY + tyOff, valueSize, dimLED);
-        drawText(ctx, String(Math.max(0, this.lives)).padStart(2, '0'), bpX + txOff, livesBoxY + tyOff, valueSize, brightLED);
-
-        // 2. TIME
-        const timeLabY = h * 0.3745;
-        const timeBoxY = h * 0.4005;
-        drawText(ctx, 'TIME', statX, timeLabY, headerSize, goldLabel);
-        ctx.fillStyle = bpFill;
-        ctx.fillRect(bpX, timeBoxY, bpW, bpH);
-        ctx.strokeStyle = bpOutline;
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(bpX, timeBoxY, bpW, bpH);
-        drawText(ctx, '88:88', bpX + txOff, timeBoxY + tyOff, valueSize, dimLED);
+        // ── Top-right: Timer ──
         const mins = String(Math.floor(this.elapsedTime / 60)).padStart(2, '0');
         const secs = String(Math.floor(this.elapsedTime) % 60).padStart(2, '0');
-        drawText(ctx, `${mins}:${secs}`, bpX + txOff, timeBoxY + tyOff, valueSize, brightLED);
+        const timerText = `${mins}:${secs}`;
+        const timerSize = h * 0.04;
+        const timerW = textWidth(ctx, timerText, timerSize);
 
-        // 3. SCORE
-        const scoreLabY = h * 0.4675;
-        const scoreBoxY = h * 0.4935;
-        drawText(ctx, 'SCORE', statX, scoreLabY, headerSize, goldLabel);
-        ctx.fillStyle = bpFill;
-        ctx.fillRect(bpX, scoreBoxY, bpW, bpH);
-        ctx.strokeStyle = bpOutline;
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(bpX, scoreBoxY, bpW, bpH);
-        drawText(ctx, '888888', bpX + txOff, scoreBoxY + tyOff, valueSize, dimLED);
-        drawText(ctx, String(this.score).padStart(6, '0'), bpX + txOff, scoreBoxY + tyOff, valueSize, brightLED);
+        const timerPadX = 12;
+        const timerBoxW = timerW + timerPadX * 2;
+        const timerBoxH = iconSize * 0.8;
+        const timerX = w * 0.97 - timerBoxW;
+        const timerY = uiY;
 
-        // 4. STAGE
-        const stageLabY = h * 0.5605;
-        const stageBoxY = h * 0.5865;
-        drawText(ctx, 'STAGE', statX, stageLabY, headerSize, goldLabel);
-        ctx.fillStyle = bpFill;
-        ctx.fillRect(bpX, stageBoxY, bpW, bpH);
-        ctx.strokeStyle = bpOutline;
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(bpX, stageBoxY, bpW, bpH);
-        drawText(ctx, '00', bpX + txOff, stageBoxY + tyOff, valueSize, dimLED);
-        drawText(ctx, String(this.currentLevel + 1).padStart(2, '0'), bpX + txOff, stageBoxY + tyOff, valueSize, brightLED);
+        fillRoundedRect(ctx, timerX, timerY, timerBoxW, timerBoxH, timerBoxH / 2, rgba(20, 25, 35, 200));
+        drawRoundedRect(ctx, timerX, timerY, timerBoxW, timerBoxH, timerBoxH / 2);
+        ctx.strokeStyle = rgba(255, 100, 100, 150);
+        ctx.stroke();
+        drawText(ctx, timerText, timerX + timerPadX, timerY + (timerBoxH - timerSize) / 2, timerSize, rgba(255, 200, 200, 255));
 
-        // 5. COMBO (Symmetrical margin to bottom frame)
-        const comboLabY = h * 0.6535;
-        const comboBoxY = h * 0.6795;
-        drawText(ctx, 'COMBO', statX, comboLabY, headerSize, goldLabel);
-        ctx.fillStyle = bpFill;
-        ctx.fillRect(bpX, comboBoxY, bpW, bpH);
-        ctx.strokeStyle = bpOutline;
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(bpX, comboBoxY, bpW, bpH);
-        drawText(ctx, '88', bpX + txOff, comboBoxY + tyOff, valueSize, dimLED);
+        // ── Below Top-right: ARCOSTER & STAGE ──
+        const titleText = 'ARCØSTER';
+        const titleSize = h * 0.05;
+        const titleW = textWidth(ctx, titleText, titleSize);
+        drawText(ctx, titleText, w * 0.97 - titleW, timerY + timerBoxH + 25, titleSize, rgba(0, 180, 255, 220));
 
-        const comboColor = this.combo >= 5 ? rgba(255, 50, 255) :
-            this.combo >= 3 ? rgba(255, 200, 0) :
-                this.combo >= 1 ? rgba(0, 255, 200) : brightLED;
-        drawText(ctx, String(this.combo).padStart(2, '0'), bpX + txOff, comboBoxY + tyOff, valueSize, comboColor);
-
-        // ── Bottom panel ──
-        const bottomY = h * 0.75;
-        const bottomH = h * 0.25;
-
-        // Neon tubes
-        const drawNeonTube = (tx) => {
-            ctx.fillStyle = rgba(5, 8, 12);
-            ctx.fillRect(tx - 2, bottomY + bottomH * 0.15, 4, bottomH * 0.7);
-            ctx.fillStyle = rgba(0, 240, 255, 160);
-            ctx.fillRect(tx - 1, bottomY + bottomH * 0.16, 2, bottomH * 0.68);
-            ctx.fillStyle = rgba(255, 255, 255, 220);
-            ctx.fillRect(tx - 0.4, bottomY + bottomH * 0.16, 0.8, bottomH * 0.68);
-        };
-        drawNeonTube(sbX + frameThick + 6);
-        drawNeonTube(w - frameThick - 6);
-
-        // Version text
-        const verLabelSize = h * 0.026;
-        const verLabel = 'Game Version';
-        const vlW = textWidth(ctx, verLabel, verLabelSize);
-        drawText(ctx, verLabel, sbX + (sbW - vlW) / 2, bottomY + bottomH * 0.22, verLabelSize, rgba(255, 220, 0));
-
-        const verNumSize = h * 0.024;
-        const verNum = '1.0.0';
-        const vnW = textWidth(ctx, verNum, verNumSize);
-        drawText(ctx, verNum, sbX + (sbW - vnW) / 2, bottomY + bottomH * 0.42, verNumSize, rgba(0, 220, 255));
-
-        const betaSize = h * 0.03;
-        const betaText = 'BETA';
-        const btW = textWidth(ctx, betaText, betaSize);
-        const flashVal = (Math.sin(this.menuAnimTimer * 5) + 1) * 0.5;
-        const beginAlpha = 80 + flashVal * 175;
-        drawText(ctx, betaText, sbX + (sbW - btW) / 2, bottomY + bottomH * 0.65, betaSize, rgba(255, 235, 100, beginAlpha));
+        const stageText = `STAGE ${this.currentLevel + 1}`;
+        const stageSize = h * 0.035;
+        const stageW = textWidth(ctx, stageText, stageSize);
+        drawText(ctx, stageText, w * 0.97 - stageW, timerY + timerBoxH + 25 + titleSize + 4, stageSize, rgba(200, 220, 255, 200));
     }
 
     drawBevelHighlight(ctx, bx, by, bw, bh) {
@@ -2912,28 +4317,28 @@ class Game {
     }
 }
 
-        // ─── Start Game ───────────────────────────────────────
+// ─── Start Game ───────────────────────────────────────
 
-        function initAndStartGame() {
-            if (window.__ricochetStarted) return;
-            window.__ricochetStarted = true;
+function initAndStartGame() {
+    if (window.__ricochetStarted) return;
+    window.__ricochetStarted = true;
 
-            try {
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('landscape').catch(() => { });
-                }
-            } catch (e) { }
-
-            const canvas = document.getElementById('gameCanvas');
-            if (canvas) {
-                const game = new Game(canvas);
-                game.start();
-            }
+    try {
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => { });
         }
+    } catch (e) { }
 
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            setTimeout(initAndStartGame, 10);
-        } else {
-            window.addEventListener('load', initAndStartGame);
-            document.addEventListener('DOMContentLoaded', initAndStartGame);
-        }
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+        const game = new Game(canvas);
+        game.start();
+    }
+}
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(initAndStartGame, 10);
+} else {
+    window.addEventListener('load', initAndStartGame);
+    document.addEventListener('DOMContentLoaded', initAndStartGame);
+}
