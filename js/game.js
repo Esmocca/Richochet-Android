@@ -143,14 +143,11 @@ class Game {
         this.lives = 3 + this.extraLives;
         this.currentLevel = 0;
 
-        // Decorative menu bricks
         this.menuDecorBricks = [];
         this.menuAnimTimer = 0;
 
-        // Rain
         this.rainDrops = [];
 
-        // Particles
         this.particles = [];
 
         // Confetti
