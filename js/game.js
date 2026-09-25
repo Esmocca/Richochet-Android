@@ -179,7 +179,7 @@ class Game {
 
         // Level Start
         this.levelStartTimer = 0;
-        this.levelStartPhase = 0; 
+        this.levelStartPhase = 0;
 
         // Starfield (parallax layers)
         this.starLayers = [];
@@ -3236,7 +3236,7 @@ class Game {
             this.state === GameState.StageClear || this.state === GameState.GameOver) {
             try {
                 this.drawGameObjects(ctx);
-            } catch(e) {
+            } catch (e) {
                 ctx.fillStyle = 'red';
                 ctx.font = '20px monospace';
                 ctx.fillText('drawGameObjects Error: ' + e.message, 10, 50);
@@ -3246,7 +3246,7 @@ class Game {
         // Confetti (drawn in game viewport)
         try {
             this.drawConfetti(ctx);
-        } catch(e) {
+        } catch (e) {
             ctx.fillStyle = 'red';
             ctx.font = '20px monospace';
             ctx.fillText('drawConfetti Error: ' + e.message, 10, 80);
@@ -3257,7 +3257,7 @@ class Game {
         // ── UI VIEW (virtual window size) ──
         try {
             this.drawUI(ctx, w, h);
-        } catch(e) {
+        } catch (e) {
             ctx.save();
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.fillStyle = 'red';
@@ -4072,6 +4072,7 @@ class Game {
         const segGap = 4;
         const segW = (livesW - 10 - segGap * (maxLives - 1)) / maxLives;
         for (let i = 0; i < maxLives; i++) {
+            const hasLife = i < this.lives;
             // 3D segment background
             let segColor;
             if (hasLife) {
@@ -4084,7 +4085,7 @@ class Game {
             const sx = livesX + 5 + i * (segW + segGap);
             const r = (i === 0 || i === maxLives - 1) ? (livesH - 10) / 2 : 2;
             fillRoundedRect(ctx, sx, livesY + 5, segW, livesH - 10, r, segColor);
-            
+
             // Bright top edge highlight for 3D effect
             if (hasLife) {
                 fillRoundedRect(ctx, sx, livesY + 5, segW, (livesH - 10) * 0.4, r, rgba(255, 255, 255, 120));
