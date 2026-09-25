@@ -4019,7 +4019,7 @@ class Game {
         // Overlay HUD (Neat & Colorful, ZZZ inspired)
 
         const uiY = h * 0.04;
-        const iconSize = h * 0.080;
+        const iconSize = h * 0.068;
 
         // ── Top-left: Pause icon & Lives bar ──
         const pauseX = w * 0.03;
@@ -4029,7 +4029,7 @@ class Game {
         fillRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 12, rgba(20, 25, 35, 200));
         drawRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 12);
         ctx.strokeStyle = rgba(131, 137, 145, 255);
-        ctx.lineWidth = 6;
+        ctx.lineWidth = 5;
         ctx.stroke();
 
         // Pause bars
@@ -4038,15 +4038,15 @@ class Game {
         ctx.fillRect(pauseX + pauseW * 0.53, uiY + iconSize * 0.28, pauseW * 0.12, iconSize * 0.44);
 
         // Lives Bar
-        const livesX = pauseX + pauseW + 12;
-        const livesW = w * 0.28;
+        const livesX = pauseX + pauseW + 10;
+        const livesW = w * 0.25;
         const livesH = iconSize * 0.7;
         const livesY = uiY + (iconSize - livesH) / 2;
 
         fillRoundedRect(ctx, livesX, livesY, livesW, livesH, livesH / 2, rgba(20, 25, 35, 200));
         drawRoundedRect(ctx, livesX, livesY, livesW, livesH, livesH / 2);
         ctx.strokeStyle = rgba(131, 137, 145, 255);
-        ctx.lineWidth = 6;
+        ctx.lineWidth = 5;
         ctx.stroke();
 
         // Fill lives segments
@@ -4063,22 +4063,22 @@ class Game {
 
         // ── Below Top-left: Score & Combo ──
         const scoreText = `${this.score} PTS`;
-        const scoreSize = h * 0.055;
-        drawText(ctx, scoreText, w * 0.03, uiY + iconSize + 30, scoreSize, rgba(255, 210, 0, 255));
+        const scoreSize = h * 0.050;
+        drawText(ctx, scoreText, w * 0.03, uiY + iconSize + 28, scoreSize, rgba(255, 210, 0, 255));
 
         if (this.combo > 1) {
             const comboText = `COMBO x${this.combo}`;
-            const comboSize = h * 0.045;
+            const comboSize = h * 0.040;
             const comboColor = this.combo >= 5 ? rgba(255, 50, 255) :
                 this.combo >= 3 ? rgba(255, 150, 0) : rgba(0, 255, 200);
-            drawText(ctx, comboText, w * 0.03, uiY + iconSize + 30 + scoreSize + 6, comboSize, comboColor);
+            drawText(ctx, comboText, w * 0.03, uiY + iconSize + 28 + scoreSize + 6, comboSize, comboColor);
         }
 
         // ── Top-right: Timer ──
         const mins = String(Math.floor(this.elapsedTime / 60)).padStart(2, '0');
         const secs = String(Math.floor(this.elapsedTime) % 60).padStart(2, '0');
         const timerText = `${mins}:${secs}`;
-        const timerSize = h * 0.05;
+        const timerSize = h * 0.045;
         const timerW = textWidth(ctx, timerText, timerSize);
 
         const timerPadX = 16;
@@ -4090,7 +4090,7 @@ class Game {
         fillRoundedRect(ctx, timerX, timerY, timerBoxW, timerBoxH, timerBoxH / 2, rgba(20, 25, 35, 200));
         drawRoundedRect(ctx, timerX, timerY, timerBoxW, timerBoxH, timerBoxH / 2);
         ctx.strokeStyle = rgba(255, 100, 100, 150);
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 5;
         ctx.stroke();
         drawText(ctx, timerText, timerX + timerPadX, timerY + (timerBoxH - timerSize) / 2, timerSize, rgba(255, 200, 200, 255));
 
