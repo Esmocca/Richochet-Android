@@ -3630,9 +3630,14 @@ class Game {
         const panelX = (w - panelW) / 2;
         const panelY = h * 0.20;
 
-        // Glass panel
-        fillRoundedRect(ctx, panelX, panelY, panelW, panelH, 8,
-            rgba(10, 15, 30, 230));
+        // Drop shadow for panel
+        fillRoundedRect(ctx, panelX + 6, panelY + 8, panelW, panelH, 8, rgba(0, 0, 0, 160));
+
+        // Glass panel 3D background
+        const menuGrad = ctx.createLinearGradient(0, panelY, 0, panelY + panelH);
+        menuGrad.addColorStop(0, rgba(45, 50, 60, 240));
+        menuGrad.addColorStop(1, rgba(15, 20, 25, 240));
+        fillRoundedRect(ctx, panelX, panelY, panelW, panelH, 8, menuGrad);
 
         // Border glow
         drawRoundedRect(ctx, panelX, panelY, panelW, panelH, 8);
@@ -4025,8 +4030,14 @@ class Game {
         const pauseX = w * 0.03;
         const pauseW = iconSize * 1.5;
 
-        // Pause button background
-        fillRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 12, rgba(20, 25, 35, 200));
+        // Pause button drop shadow
+        fillRoundedRect(ctx, pauseX + 3, uiY + 4, pauseW, iconSize, 12, rgba(0, 0, 0, 130));
+
+        // Pause button 3D background
+        const pauseGrad = ctx.createLinearGradient(0, uiY, 0, uiY + iconSize);
+        pauseGrad.addColorStop(0, rgba(50, 55, 65, 220));
+        pauseGrad.addColorStop(1, rgba(20, 25, 30, 220));
+        fillRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 12, pauseGrad);
         drawRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 12);
         ctx.strokeStyle = rgba(131, 137, 145, 255);
         ctx.lineWidth = 5;
@@ -4043,7 +4054,14 @@ class Game {
         const livesH = iconSize * 0.7;
         const livesY = uiY + (iconSize - livesH) / 2;
 
-        fillRoundedRect(ctx, livesX, livesY, livesW, livesH, livesH / 2, rgba(20, 25, 35, 200));
+        // Lives bar drop shadow
+        fillRoundedRect(ctx, livesX + 3, livesY + 4, livesW, livesH, livesH / 2, rgba(0, 0, 0, 130));
+
+        // Lives bar 3D background
+        const livesGrad = ctx.createLinearGradient(0, livesY, 0, livesY + livesH);
+        livesGrad.addColorStop(0, rgba(40, 45, 55, 220));
+        livesGrad.addColorStop(1, rgba(15, 20, 25, 220));
+        fillRoundedRect(ctx, livesX, livesY, livesW, livesH, livesH / 2, livesGrad);
         drawRoundedRect(ctx, livesX, livesY, livesW, livesH, livesH / 2);
         ctx.strokeStyle = rgba(131, 137, 145, 255);
         ctx.lineWidth = 5;
@@ -4054,11 +4072,23 @@ class Game {
         const segGap = 4;
         const segW = (livesW - 10 - segGap * (maxLives - 1)) / maxLives;
         for (let i = 0; i < maxLives; i++) {
-            const hasLife = i < this.lives;
-            ctx.fillStyle = hasLife ? rgba(50, 255, 100, 240) : rgba(50, 50, 60, 150);
+            // 3D segment background
+            let segColor;
+            if (hasLife) {
+                segColor = ctx.createLinearGradient(0, livesY + 5, 0, livesY + 5 + livesH - 10);
+                segColor.addColorStop(0, rgba(150, 255, 180, 240));
+                segColor.addColorStop(1, rgba(30, 200, 80, 240));
+            } else {
+                segColor = rgba(50, 50, 60, 150);
+            }
             const sx = livesX + 5 + i * (segW + segGap);
             const r = (i === 0 || i === maxLives - 1) ? (livesH - 10) / 2 : 2;
-            fillRoundedRect(ctx, sx, livesY + 5, segW, livesH - 10, r, ctx.fillStyle);
+            fillRoundedRect(ctx, sx, livesY + 5, segW, livesH - 10, r, segColor);
+            
+            // Bright top edge highlight for 3D effect
+            if (hasLife) {
+                fillRoundedRect(ctx, sx, livesY + 5, segW, (livesH - 10) * 0.4, r, rgba(255, 255, 255, 120));
+            }
         }
 
         // ── Below Top-left: Score & Combo ──
@@ -4087,7 +4117,14 @@ class Game {
         const timerX = w * 0.97 - timerBoxW;
         const timerY = uiY;
 
-        fillRoundedRect(ctx, timerX, timerY, timerBoxW, timerBoxH, timerBoxH / 2, rgba(20, 25, 35, 200));
+        // Timer box drop shadow
+        fillRoundedRect(ctx, timerX + 3, timerY + 4, timerBoxW, timerBoxH, timerBoxH / 2, rgba(0, 0, 0, 130));
+
+        // Timer box 3D background
+        const timerGrad = ctx.createLinearGradient(0, timerY, 0, timerY + timerBoxH);
+        timerGrad.addColorStop(0, rgba(50, 30, 35, 220));
+        timerGrad.addColorStop(1, rgba(25, 15, 20, 220));
+        fillRoundedRect(ctx, timerX, timerY, timerBoxW, timerBoxH, timerBoxH / 2, timerGrad);
         drawRoundedRect(ctx, timerX, timerY, timerBoxW, timerBoxH, timerBoxH / 2);
         ctx.strokeStyle = rgba(255, 100, 100, 150);
         ctx.lineWidth = 5;
