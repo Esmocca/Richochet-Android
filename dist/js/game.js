@@ -1,7 +1,6 @@
-// Ricochet Arcade HD
 // Port from C++ SFML to HTML5 Canvas
 // Game By: Esmoocca
-// Enhanced Edition — Full Feature Implementation
+// Beta Test Version enchanted ui and stages
 
 const GameState = { Menu: 0, Options: 1, Playing: 2, StageClear: 3, GameOver: 4, Paused: 5, Shop: 6 };
 
@@ -84,7 +83,6 @@ function textWidth(ctx, text, size) {
     return ctx.measureText(text).width;
 }
 
-// ─── Ball Class ──────────────────────────────────────
 class Ball {
     constructor(x, y, vx, vy, radius) {
         this.x = x;
@@ -103,13 +101,11 @@ class Game {
         this.ctx = canvas.getContext('2d');
         this.audio = new AudioManager();
 
-        // State
         this.state = GameState.Menu;
         this.menuSelectedIndex = 0;
         this.optionSelectedIndex = 0;
         this.pauseSelectedIndex = 0;
 
-        // Paddle Colors
         this.paddleColors = [
             { label: 'BLUE', color: [0, 180, 255] },
             { label: 'ORANGE', color: [255, 110, 0] },
@@ -119,19 +115,16 @@ class Game {
         ];
         this.selectedColorIndex = 0;
 
-        // Settings
         this.volume = 50;
-        this.difficulty = 1; // 0: Easy, 1: Normal, 2: Hard
+        this.difficulty = 1; // set on normal difficulty
         this.difficulties = ['EASY', 'NORMAL', 'HARD'];
         this.highScore = 0;
 
-        // Physics
         this.baseSpeed = 130;
         this.currentSpeed = 130;
         this.maxSpeed = 350;
         this.speedMultiplier = 1.0;
 
-        // Paddle
         this.paddleWidth = 36;
         this.basePaddleWidth = 36;
         this.paddleHeight = 6;
@@ -139,14 +132,11 @@ class Game {
         this.paddleY = 223;
         this.paddleBounceTimer = 0.3;
 
-        // Multi-ball system
         this.balls = [];
 
-        // Bricks
         this.bricks = [];
         this.brickSpawnTimer = 0;
 
-        // Score & Time
         this.score = 0;
         this.elapsedTime = 0;
         this.extraLives = 0;
@@ -189,7 +179,7 @@ class Game {
 
         // Level Start
         this.levelStartTimer = 0;
-        this.levelStartPhase = 0; // 0=stage name, 1=READY, 2=GO
+        this.levelStartPhase = 0; 
 
         // Starfield (parallax layers)
         this.starLayers = [];
@@ -3646,14 +3636,14 @@ class Game {
 
         // Border glow
         drawRoundedRect(ctx, panelX, panelY, panelW, panelH, 8);
-        ctx.strokeStyle = rgba(0, 200, 255, 160);
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = rgba(131, 137, 145, 160);
+        ctx.lineWidth = 3;
         ctx.stroke();
 
         // Outer glow
         drawRoundedRect(ctx, panelX - 3, panelY - 3, panelW + 6, panelH + 6, 10);
-        ctx.strokeStyle = rgba(0, 200, 255, 35);
-        ctx.lineWidth = 4;
+        ctx.strokeStyle = rgba(131, 137, 145, 45);
+        ctx.lineWidth = 6;
         ctx.stroke();
 
         // Scanlines
@@ -3674,10 +3664,10 @@ class Game {
         const titleText = '❚❚ PAUSE MENU';
         const titleSize = h * 0.046;
         const tw = textWidth(ctx, titleText, titleSize);
-        drawText(ctx, titleText, (w - tw) / 2, panelY + h * 0.04, titleSize, rgba(0, 240, 255));
+        drawText(ctx, titleText, (w - tw) / 2, panelY + h * 0.04, titleSize, rgba(200, 200, 210));
 
         // Divider
-        ctx.strokeStyle = rgba(0, 200, 255, 80);
+        ctx.strokeStyle = rgba(131, 137, 145, 100);
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(panelX + 20, panelY + h * 0.10);
@@ -3693,9 +3683,9 @@ class Game {
         const btnX = (w - btnW) / 2;
 
         const btnColors = [
-            [0, 255, 180],   // Cyan-green for RESUME
-            [255, 200, 0],   // Yellow for RESTART
-            [255, 80, 100],  // Red for EXIT
+            [131, 137, 145],   // Grey for RESUME
+            [131, 137, 145],   // Grey for RESTART
+            [131, 137, 145],   // Grey for EXIT
         ];
 
         for (let i = 0; i < items.length; i++) {
@@ -4029,69 +4019,69 @@ class Game {
         // Overlay HUD (Neat & Colorful, ZZZ inspired)
 
         const uiY = h * 0.04;
-        const iconSize = h * 0.055;
+        const iconSize = h * 0.080;
 
         // ── Top-left: Pause icon & Lives bar ──
         const pauseX = w * 0.03;
         const pauseW = iconSize * 1.5;
 
         // Pause button background
-        fillRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 8, rgba(20, 25, 35, 200));
-        drawRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 8);
-        ctx.strokeStyle = rgba(131, 137, 145, 180);
-        ctx.lineWidth = 1.5;
+        fillRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 12, rgba(20, 25, 35, 200));
+        drawRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 12);
+        ctx.strokeStyle = rgba(131, 137, 145, 255);
+        ctx.lineWidth = 6;
         ctx.stroke();
 
         // Pause bars
         ctx.fillStyle = rgba(131, 137, 145, 255);
-        ctx.fillRect(pauseX + pauseW * 0.35, uiY + iconSize * 0.3, pauseW * 0.12, iconSize * 0.4);
-        ctx.fillRect(pauseX + pauseW * 0.55, uiY + iconSize * 0.3, pauseW * 0.12, iconSize * 0.4);
+        ctx.fillRect(pauseX + pauseW * 0.35, uiY + iconSize * 0.28, pauseW * 0.12, iconSize * 0.44);
+        ctx.fillRect(pauseX + pauseW * 0.53, uiY + iconSize * 0.28, pauseW * 0.12, iconSize * 0.44);
 
         // Lives Bar
-        const livesX = pauseX + pauseW + 8;
-        const livesW = w * 0.22;
+        const livesX = pauseX + pauseW + 12;
+        const livesW = w * 0.28;
         const livesH = iconSize * 0.7;
         const livesY = uiY + (iconSize - livesH) / 2;
 
         fillRoundedRect(ctx, livesX, livesY, livesW, livesH, livesH / 2, rgba(20, 25, 35, 200));
         drawRoundedRect(ctx, livesX, livesY, livesW, livesH, livesH / 2);
-        ctx.strokeStyle = rgba(100, 255, 100, 150);
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = rgba(131, 137, 145, 255);
+        ctx.lineWidth = 6;
         ctx.stroke();
 
         // Fill lives segments
         const maxLives = 5;
-        const segGap = 3;
-        const segW = (livesW - 6 - segGap * (maxLives - 1)) / maxLives;
+        const segGap = 4;
+        const segW = (livesW - 10 - segGap * (maxLives - 1)) / maxLives;
         for (let i = 0; i < maxLives; i++) {
             const hasLife = i < this.lives;
             ctx.fillStyle = hasLife ? rgba(50, 255, 100, 240) : rgba(50, 50, 60, 150);
-            const sx = livesX + 3 + i * (segW + segGap);
-            const r = (i === 0 || i === maxLives - 1) ? (livesH - 6) / 2 : 2;
-            fillRoundedRect(ctx, sx, livesY + 3, segW, livesH - 6, r, ctx.fillStyle);
+            const sx = livesX + 5 + i * (segW + segGap);
+            const r = (i === 0 || i === maxLives - 1) ? (livesH - 10) / 2 : 2;
+            fillRoundedRect(ctx, sx, livesY + 5, segW, livesH - 10, r, ctx.fillStyle);
         }
 
         // ── Below Top-left: Score & Combo ──
         const scoreText = `${this.score} PTS`;
-        const scoreSize = h * 0.045;
-        drawText(ctx, scoreText, w * 0.03, uiY + iconSize + 25, scoreSize, rgba(255, 210, 0, 255));
+        const scoreSize = h * 0.055;
+        drawText(ctx, scoreText, w * 0.03, uiY + iconSize + 30, scoreSize, rgba(255, 210, 0, 255));
 
         if (this.combo > 1) {
             const comboText = `COMBO x${this.combo}`;
-            const comboSize = h * 0.035;
+            const comboSize = h * 0.045;
             const comboColor = this.combo >= 5 ? rgba(255, 50, 255) :
                 this.combo >= 3 ? rgba(255, 150, 0) : rgba(0, 255, 200);
-            drawText(ctx, comboText, w * 0.03, uiY + iconSize + 25 + scoreSize + 4, comboSize, comboColor);
+            drawText(ctx, comboText, w * 0.03, uiY + iconSize + 30 + scoreSize + 6, comboSize, comboColor);
         }
 
         // ── Top-right: Timer ──
         const mins = String(Math.floor(this.elapsedTime / 60)).padStart(2, '0');
         const secs = String(Math.floor(this.elapsedTime) % 60).padStart(2, '0');
         const timerText = `${mins}:${secs}`;
-        const timerSize = h * 0.04;
+        const timerSize = h * 0.05;
         const timerW = textWidth(ctx, timerText, timerSize);
 
-        const timerPadX = 12;
+        const timerPadX = 16;
         const timerBoxW = timerW + timerPadX * 2;
         const timerBoxH = iconSize * 0.8;
         const timerX = w * 0.97 - timerBoxW;
@@ -4100,6 +4090,7 @@ class Game {
         fillRoundedRect(ctx, timerX, timerY, timerBoxW, timerBoxH, timerBoxH / 2, rgba(20, 25, 35, 200));
         drawRoundedRect(ctx, timerX, timerY, timerBoxW, timerBoxH, timerBoxH / 2);
         ctx.strokeStyle = rgba(255, 100, 100, 150);
+        ctx.lineWidth = 4;
         ctx.stroke();
         drawText(ctx, timerText, timerX + timerPadX, timerY + (timerBoxH - timerSize) / 2, timerSize, rgba(255, 200, 200, 255));
 
