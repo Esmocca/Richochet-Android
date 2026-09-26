@@ -4266,7 +4266,7 @@ class Game {
 
             // Circle border (bulky gray like nav/pause buttons)
             ctx.strokeStyle = rgba(131, 137, 145, 255);
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 5;
             ctx.stroke();
 
             // Draw the bulky icon
@@ -4281,7 +4281,7 @@ class Game {
         // Center the icon visually because lines are on the left
         ctx.translate(size * 0.3, 0);
 
-        ctx.lineWidth = isBulky ? size * 0.25 : size * 0.12;
+        ctx.lineWidth = size * 0.14; // Thinner lines to reduce bulkiness, keeps it crisp
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
