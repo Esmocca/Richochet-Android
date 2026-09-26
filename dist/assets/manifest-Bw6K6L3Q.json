@@ -1,0 +1,22 @@
+{
+    "name": "Ricochet Arcade HD",
+    "short_name": "Ricochet",
+    "description": "Retro Arcade Block Breaker Game",
+    "start_url": "/index.html",
+    "display": "fullscreen",
+    "orientation": "landscape",
+    "background_color": "#0c0e18",
+    "theme_color": "#00c8ff",
+    "icons": [
+        {
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

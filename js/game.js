@@ -1362,6 +1362,7 @@ class Game {
 
                 if (this.lives <= 0) {
                     this.isNewHighScore = this.score > this.highScore;
+                    if (this.isNewHighScore) {
                         this.highScore = this.score;
                     }
                     this.extraLives = 0;
@@ -1382,6 +1383,16 @@ class Game {
                     this.fireCompanionProjectile();
                 }
             }
+
+            // Paddle trail (Speedster)
+            if (!this.paddleTrails) this.paddleTrails = [];
+            if (this.speedsterActive) {
+                this.paddleTrails.push({ x: this.paddleX, lifetime: 0 });
+            }
+            this.paddleTrails = this.paddleTrails.filter(t => {
+                t.lifetime += dt;
+                return t.lifetime < 0.15;
+            });
         }
     }
 
@@ -2400,7 +2411,7 @@ class Game {
         const coinBalText = `${this.coins}`;
         const coinBalSize = h * 0.035;
         const coinBalW = textWidth(ctx, coinBalText, coinBalSize);
-        
+
         const iconRad = h * 0.015;
         const padX = 12;
         const frameW = coinBalW + iconRad * 2 + padX * 3;
@@ -2417,7 +2428,7 @@ class Game {
         frameGrad.addColorStop(1, rgba(25, 20, 10, 220));
         fillRoundedRect(ctx, frameX, frameY, frameW, frameH, frameH / 2, frameGrad);
         drawRoundedRect(ctx, frameX, frameY, frameW, frameH, frameH / 2);
-        
+
         ctx.strokeStyle = rgba(255, 180, 50, 180);
         ctx.lineWidth = 3;
         ctx.stroke();
@@ -2632,7 +2643,7 @@ class Game {
             const iy = drawY + row * (itemCardH + 10);
 
             const iAvail = item.available;
-            
+
             // Drop shadow
             fillRoundedRect(ctx, ix + 3, iy + 4, itemCardW, itemCardH, 7, rgba(0, 0, 0, 130));
 
@@ -2649,7 +2660,7 @@ class Game {
             drawRoundedRect(ctx, ix, iy, itemCardW, itemCardH, 7);
             ctx.strokeStyle = rgba(item.color[0], item.color[1], item.color[2], iAvail ? 120 : 40);
             ctx.lineWidth = 1.5; ctx.stroke();
-            
+
             // Top shine
             const shine = ctx.createLinearGradient(ix, iy, ix, iy + itemCardH * 0.35);
             shine.addColorStop(0, rgba(255, 255, 255, iAvail ? 30 : 10));
@@ -2657,10 +2668,15 @@ class Game {
             fillRoundedRect(ctx, ix + 1, iy + 1, itemCardW - 2, itemCardH * 0.35, 6, shine);
 
             // Icon
-            const iconFontSize = h * 0.060;
-            const iconW = textWidth(ctx, item.icon, iconFontSize);
-            drawText(ctx, item.icon, ix + (itemCardW - iconW) / 2, iy + itemCardH * 0.22,
-                iconFontSize, rgba(item.color[0], item.color[1], item.color[2], iAvail ? 220 : 80));
+            if (item.id === 'speedster') {
+                const iconColor = rgba(item.color[0], item.color[1], item.color[2], iAvail ? 220 : 80);
+                this.drawPaddleSpeedIcon(ctx, ix + itemCardW / 2, iy + itemCardH * 0.3, h * 0.08, iconColor, false);
+            } else {
+                const iconFontSize = h * 0.060;
+                const iconW = textWidth(ctx, item.icon, iconFontSize);
+                drawText(ctx, item.icon, ix + (itemCardW - iconW) / 2, iy + itemCardH * 0.22,
+                    iconFontSize, rgba(item.color[0], item.color[1], item.color[2], iAvail ? 220 : 80));
+            }
 
             // Name
             const iNameSize = h * 0.024;
@@ -2675,7 +2691,7 @@ class Game {
                 const descW = textWidth(ctx, descText, descSize);
                 drawText(ctx, descText, ix + (itemCardW - descW) / 2, iy + itemCardH * 0.70,
                     descSize, rgba(180, 200, 220, 160));
-                    
+
                 let isBoughtOut = false;
                 if (item.id === 'speedster' && this.speedsterActive) isBoughtOut = true;
 
@@ -3401,6 +3417,19 @@ class Game {
         paddleGlow.addColorStop(1, rgba(pc[0], pc[1], pc[2], 0));
         ctx.fillStyle = paddleGlow;
         ctx.fillRect(this.paddleX - this.paddleWidth, this.paddleY - 15, this.paddleWidth * 2, 30);
+
+        // Draw paddle trails (speedster blur)
+        if (this.paddleTrails && this.speedsterActive) {
+            for (const t of this.paddleTrails) {
+                const progress = t.lifetime / 0.15;
+                const alpha = (1 - progress) * 150;
+                fillRoundedRect(ctx,
+                    t.x - this.paddleWidth / 2,
+                    this.paddleY - this.paddleHeight / 2 + visualYOffset,
+                    this.paddleWidth, this.paddleHeight, 2,
+                    rgba(pc[0], pc[1], pc[2], alpha));
+            }
+        }
 
         // Paddle
         fillRoundedRect(ctx,
@@ -4209,23 +4238,82 @@ class Game {
         const stageW = textWidth(ctx, stageText, stageSize);
         drawText(ctx, stageText, w * 0.97 - stageW, timerY + timerBoxH + 25 + titleSize + 4, stageSize, rgba(200, 220, 255, 200));
 
-        // Speedster Indicator above right navigation button
+        // Speedster Indicator below stage text
         if (this.speedsterActive) {
-            const btnScale = (this.btnScale || 100) / 100;
-            const btnSz = 70 * btnScale;
-            const iconX = w - 20 - btnSz / 2;
-            const iconY = h - 30 - btnSz;
-            
-            const rad = h * 0.03;
-            fillRoundedRect(ctx, iconX - rad, iconY - rad, rad*2, rad*2, rad, rgba(0, 255, 255, 40));
-            drawRoundedRect(ctx, iconX - rad, iconY - rad, rad*2, rad*2, rad);
-            ctx.strokeStyle = rgba(0, 255, 255, 200); ctx.lineWidth = 2; ctx.stroke();
-            
-            const sTxt = '»';
-            const sSz = h * 0.045;
-            const sW = textWidth(ctx, sTxt, sSz);
-            drawText(ctx, sTxt, iconX - sW/2 + 2, iconY + sSz/3 - 4, sSz, rgba(255, 255, 255, 255));
+            const iconX = w * 0.97 - stageW / 2;
+            const iconY = timerY + timerBoxH + 25 + titleSize + 4 + stageSize + 30;
+
+            // Frame lingkaran (Circle frame)
+            const rad = h * 0.035; // Smaller radius to make the icon pop out
+
+            // Circle drop shadow
+            ctx.beginPath();
+            ctx.arc(iconX + 2, iconY + 3, rad, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(0, 0, 0, 130);
+            ctx.fill();
+
+            // Circle 3D background gradient
+            const circleGrad = ctx.createLinearGradient(0, iconY - rad, 0, iconY + rad);
+            circleGrad.addColorStop(0, rgba(40, 45, 55, 220));
+            circleGrad.addColorStop(1, rgba(15, 20, 25, 220));
+            ctx.beginPath();
+            ctx.arc(iconX, iconY, rad, 0, Math.PI * 2);
+            ctx.fillStyle = circleGrad;
+            ctx.fill();
+
+            // Circle border (bulky gray like nav/pause buttons)
+            ctx.strokeStyle = rgba(131, 137, 145, 255);
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Draw the bulky icon
+            this.drawPaddleSpeedIcon(ctx, iconX, iconY, h * 0.055, rgba(170, 175, 180, 255), true);
         }
+    }
+
+    drawPaddleSpeedIcon(ctx, x, y, size, color, isBulky) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(-Math.PI / 8); // slight tilt
+        // Center the icon visually because lines are on the left
+        ctx.translate(size * 0.3, 0);
+
+        if (isBulky) {
+            ctx.shadowColor = rgba(0, 0, 0, 140);
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 3;
+            ctx.shadowBlur = 0;
+        }
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = isBulky ? size * 0.25 : size * 0.12;
+        ctx.lineCap = 'round';
+
+        const pw = size * 0.7;
+        const ph = size * 0.25;
+
+        // Paddle outline
+        ctx.beginPath();
+        const r = ph / 2;
+        ctx.moveTo(-pw / 2 + r, -ph / 2);
+        ctx.lineTo(pw / 2 - r, -ph / 2);
+        ctx.arc(pw / 2 - r, 0, r, -Math.PI / 2, Math.PI / 2);
+        ctx.lineTo(-pw / 2 + r, ph / 2);
+        ctx.arc(-pw / 2 + r, 0, r, Math.PI / 2, Math.PI * 1.5);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Speed lines
+        const lineLen = size * 0.5;
+        const gap = ctx.lineWidth * 0.8 + size * 0.1;
+        // center
+        ctx.beginPath(); ctx.moveTo(-pw / 2 - gap, 0); ctx.lineTo(-pw / 2 - gap - lineLen, 0); ctx.stroke();
+        // top
+        ctx.beginPath(); ctx.moveTo(-pw / 2 - gap + size * 0.08, -ph * 0.9); ctx.lineTo(-pw / 2 - gap + size * 0.08 - lineLen * 0.7, -ph * 0.9); ctx.stroke();
+        // bottom
+        ctx.beginPath(); ctx.moveTo(-pw / 2 - gap + size * 0.08, ph * 0.9); ctx.lineTo(-pw / 2 - gap + size * 0.08 - lineLen * 0.7, ph * 0.9); ctx.stroke();
+
+        ctx.restore();
     }
 
     drawBevelHighlight(ctx, bx, by, bw, bh) {

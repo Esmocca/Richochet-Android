@@ -42,7 +42,7 @@ public class MainActivity extends BridgeActivity {
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
-            // Re-hide system bars when app regains focus
+            // Re-hide system bars when app regains focus3
             WindowInsetsControllerCompat controller =
                 WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
             if (controller != null) {
