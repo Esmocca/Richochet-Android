@@ -143,14 +143,11 @@ class Game {
         this.lives = 3 + this.extraLives;
         this.currentLevel = 0;
 
-        // Decorative menu bricks
         this.menuDecorBricks = [];
         this.menuAnimTimer = 0;
 
-        // Rain
         this.rainDrops = [];
 
-        // Particles
         this.particles = [];
 
         // Confetti
@@ -3423,15 +3420,18 @@ class Game {
 
         // Draw paddle trails (speedster blur)
         if (this.paddleTrails && this.speedsterActive) {
+            ctx.save();
             for (const t of this.paddleTrails) {
                 const progress = t.lifetime / 0.15;
-                const alpha = (1 - progress) * 150;
+                ctx.globalAlpha = (1 - progress) * 0.7; // Fade out up to 70% opacity
                 fillRoundedRect(ctx,
                     t.x - this.paddleWidth / 2,
                     this.paddleY - this.paddleHeight / 2 + visualYOffset,
                     this.paddleWidth, this.paddleHeight, 2,
-                    rgba(pc[0], pc[1], pc[2], alpha));
+                    rgba(pc[0], pc[1], pc[2]),
+                    grad, 1.5);
             }
+            ctx.restore();
         }
 
         // Paddle
@@ -4281,40 +4281,48 @@ class Game {
         // Center the icon visually because lines are on the left
         ctx.translate(size * 0.3, 0);
 
-        if (isBulky) {
-            ctx.shadowColor = rgba(0, 0, 0, 140);
-            ctx.shadowOffsetX = 2;
-            ctx.shadowOffsetY = 3;
-            ctx.shadowBlur = 0;
-        }
-
-        ctx.strokeStyle = color;
         ctx.lineWidth = isBulky ? size * 0.25 : size * 0.12;
         ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
 
-        const pw = size * 0.7;
-        const ph = size * 0.25;
+        const buildPath = () => {
+            const pw = size * 0.7;
+            const ph = size * 0.25;
 
-        // Paddle outline
-        ctx.beginPath();
-        const r = ph / 2;
-        ctx.moveTo(-pw / 2 + r, -ph / 2);
-        ctx.lineTo(pw / 2 - r, -ph / 2);
-        ctx.arc(pw / 2 - r, 0, r, -Math.PI / 2, Math.PI / 2);
-        ctx.lineTo(-pw / 2 + r, ph / 2);
-        ctx.arc(-pw / 2 + r, 0, r, Math.PI / 2, Math.PI * 1.5);
-        ctx.closePath();
+            // Paddle outline
+            ctx.beginPath();
+            const r = ph / 2;
+            ctx.moveTo(-pw / 2 + r, -ph / 2);
+            ctx.lineTo(pw / 2 - r, -ph / 2);
+            ctx.arc(pw / 2 - r, 0, r, -Math.PI / 2, Math.PI / 2);
+            ctx.lineTo(-pw / 2 + r, ph / 2);
+            ctx.arc(-pw / 2 + r, 0, r, Math.PI / 2, Math.PI * 1.5);
+            ctx.closePath();
+
+            // Speed lines
+            const lineLen = size * 0.5;
+            const gap = ctx.lineWidth * 0.8 + size * 0.1;
+            // center
+            ctx.moveTo(-pw / 2 - gap, 0); ctx.lineTo(-pw / 2 - gap - lineLen, 0);
+            // top
+            ctx.moveTo(-pw / 2 - gap + size * 0.08, -ph * 0.9); ctx.lineTo(-pw / 2 - gap + size * 0.08 - lineLen * 0.7, -ph * 0.9);
+            // bottom
+            ctx.moveTo(-pw / 2 - gap + size * 0.08, ph * 0.9); ctx.lineTo(-pw / 2 - gap + size * 0.08 - lineLen * 0.7, ph * 0.9);
+        };
+
+        if (isBulky) {
+            // Hard drop shadow matching pause/health bar
+            ctx.save();
+            ctx.translate(3, 4);
+            buildPath();
+            ctx.strokeStyle = rgba(0, 0, 0, 160);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        buildPath();
+        ctx.strokeStyle = color;
         ctx.stroke();
-
-        // Speed lines
-        const lineLen = size * 0.5;
-        const gap = ctx.lineWidth * 0.8 + size * 0.1;
-        // center
-        ctx.beginPath(); ctx.moveTo(-pw / 2 - gap, 0); ctx.lineTo(-pw / 2 - gap - lineLen, 0); ctx.stroke();
-        // top
-        ctx.beginPath(); ctx.moveTo(-pw / 2 - gap + size * 0.08, -ph * 0.9); ctx.lineTo(-pw / 2 - gap + size * 0.08 - lineLen * 0.7, -ph * 0.9); ctx.stroke();
-        // bottom
-        ctx.beginPath(); ctx.moveTo(-pw / 2 - gap + size * 0.08, ph * 0.9); ctx.lineTo(-pw / 2 - gap + size * 0.08 - lineLen * 0.7, ph * 0.9); ctx.stroke();
 
         ctx.restore();
     }
