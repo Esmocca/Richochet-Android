@@ -14,10 +14,8 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Keep screen on while playing
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        // Enable edge-to-edge immersive mode
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         WindowInsetsControllerCompat controller =
             WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
@@ -28,7 +26,6 @@ public class MainActivity extends BridgeActivity {
             );
         }
 
-        // Enable DOM Storage & WebSettings for Android WebView
         if (this.bridge != null && this.bridge.getWebView() != null) {
             android.webkit.WebSettings webSettings = this.bridge.getWebView().getSettings();
             webSettings.setDomStorageEnabled(true);
