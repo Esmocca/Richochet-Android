@@ -614,6 +614,7 @@ class Game {
                 highScore: this.highScore,
                 coins: this.coins,
                 extraLives: this.extraLives || 0,
+                speedsterActive: this.speedsterActive || false,
                 ownedCompanions: this.companions.filter(c => c.owned).map(c => c.id),
                 equippedCompanion: this.equippedCompanion,
                 shopFirstVisit: this.shopFirstVisit,
@@ -638,6 +639,7 @@ class Game {
                 this.highScore = settings.highScore ?? 0;
                 this.coins = settings.coins ?? 0;
                 this.extraLives = settings.extraLives ?? 0;
+                this.speedsterActive = settings.speedsterActive ?? false;
                 this.shopFirstVisit = settings.shopFirstVisit ?? true;
                 this.btnScale = settings.btnScale ?? 100;
                 if (this.btnScale < 90) this.btnScale = 90;
@@ -1266,7 +1268,7 @@ class Game {
         this.elapsedTime += dt;
 
         // Paddle movement
-        const paddleSpeed = 190;
+        const paddleSpeed = this.speedsterActive ? 285 : 190;
         const halfPaddle = this.paddleWidth / 2;
         if ((this.keys['KeyA'] || this.keys['ArrowLeft'] || this.touchLeft) && this.paddleX > halfPaddle) {
             this.paddleX -= paddleSpeed * dt;
@@ -1360,10 +1362,10 @@ class Game {
 
                 if (this.lives <= 0) {
                     this.isNewHighScore = this.score > this.highScore;
-                    if (this.isNewHighScore) {
                         this.highScore = this.score;
                     }
                     this.extraLives = 0;
+                    this.speedsterActive = false;
                     this.saveSettings();
                     this.audio.init(); this.audio.playGameOver();
                     this.triggerStateTransition(GameState.GameOver);
@@ -2225,6 +2227,12 @@ class Game {
                             this.saveSettings();
                             this.audio.init(); this.audio.playLevelClear();
                             this.spawnConfetti();
+                        } else if (this.shopConfirmIndex === 1) {
+                            this.coins -= 50;
+                            this.speedsterActive = true;
+                            this.saveSettings();
+                            this.audio.init(); this.audio.playLevelClear();
+                            this.spawnConfetti();
                         }
                     }
                     this.shopConfirmType = null;
@@ -2287,7 +2295,7 @@ class Game {
         const itemCardH = h * 0.28;
         const itemGap = (w - 3 * itemCardW) / 4;
 
-        for (let i = 0; i < 3; i++) { // Revive, soon1, soon2
+        for (let i = 0; i < 3; i++) { // Revive, Speedster, soon1
             const col = i % 3;
             const row = Math.floor(i / 3);
             const ix = itemGap + col * (itemCardW + itemGap);
@@ -2300,6 +2308,16 @@ class Game {
                     } else if (this.coins >= 25) {
                         this.shopConfirmType = 'item';
                         this.shopConfirmIndex = 0;
+                        this.audio.init(); this.audio.playBrickSound(0.9);
+                    } else {
+                        this.audio.init(); this.audio.playLifeLost();
+                    }
+                } else if (i === 1) { // Speedster
+                    if (this.speedsterActive) {
+                        this.audio.init(); this.audio.playHitWallSound();
+                    } else if (this.coins >= 50) {
+                        this.shopConfirmType = 'item';
+                        this.shopConfirmIndex = 1;
                         this.audio.init(); this.audio.playBrickSound(0.9);
                     } else {
                         this.audio.init(); this.audio.playLifeLost();
@@ -2370,26 +2388,50 @@ class Game {
         ctx.beginPath(); ctx.moveTo(0, headerH); ctx.lineTo(w, headerH); ctx.stroke();
 
         // Title
-        const titleText = 'SHOP';
-        const titleSize = h * 0.060;
+        const titleText = 'SHOP MERCHANT';
+        const titleSize = h * 0.055; // Slightly smaller to fit "MERCHANT"
         const titleW = textWidth(ctx, titleText, titleSize);
         const bloomPulse = (Math.sin(this.menuAnimTimer * 2.5) + 1) * 0.5;
         drawText(ctx, titleText, (w - titleW) / 2 + 2, h * 0.025 + 2, titleSize, rgba(180, 80, 0, 60));
         drawText(ctx, titleText, (w - titleW) / 2, h * 0.025, titleSize,
             rgba(255, 180 + bloomPulse * 30, 40, 220 + bloomPulse * 35));
 
-        // Coin balance top-right
+        // Coin balance top-right with 3D Frame
         const coinBalText = `${this.coins}`;
         const coinBalSize = h * 0.035;
         const coinBalW = textWidth(ctx, coinBalText, coinBalSize);
-        const cX = w - coinBalW - w * 0.04;
+        
+        const iconRad = h * 0.015;
+        const padX = 12;
+        const frameW = coinBalW + iconRad * 2 + padX * 3;
+        const frameH = h * 0.055;
+        const frameX = w * 0.97 - frameW;
+        const frameY = (headerH - frameH) / 2;
 
+        // Drop shadow for coin frame
+        fillRoundedRect(ctx, frameX + 3, frameY + 4, frameW, frameH, frameH / 2, rgba(0, 0, 0, 130));
+
+        // 3D Background for coin frame
+        const frameGrad = ctx.createLinearGradient(0, frameY, 0, frameY + frameH);
+        frameGrad.addColorStop(0, rgba(50, 45, 30, 220));
+        frameGrad.addColorStop(1, rgba(25, 20, 10, 220));
+        fillRoundedRect(ctx, frameX, frameY, frameW, frameH, frameH / 2, frameGrad);
+        drawRoundedRect(ctx, frameX, frameY, frameW, frameH, frameH / 2);
+        
+        ctx.strokeStyle = rgba(255, 180, 50, 180);
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Draw coin icon vertically aligned inside frame
+        const cX = frameX + padX + iconRad;
+        const cY = frameY + frameH / 2;
         ctx.beginPath();
-        ctx.arc(cX - h * 0.02, h * 0.038 - coinBalSize * 0.15, h * 0.02, 0, Math.PI * 2);
+        ctx.arc(cX, cY, iconRad, 0, Math.PI * 2);
         ctx.fillStyle = rgba(255, 215, 0); ctx.fill();
-        ctx.strokeStyle = rgba(255, 255, 255, 180); ctx.lineWidth = 2; ctx.stroke();
+        ctx.strokeStyle = rgba(255, 255, 255, 180); ctx.lineWidth = 1.5; ctx.stroke();
 
-        drawText(ctx, coinBalText, cX, h * 0.038, coinBalSize, rgba(255, 210, 0, 230));
+        // Draw coin text
+        drawText(ctx, coinBalText, cX + iconRad + padX - 4, frameY + (frameH - coinBalSize) / 2, coinBalSize, rgba(255, 210, 0, 255));
 
         // ── Scrollable content area ──
         const contentY = headerH + 4;
@@ -2578,8 +2620,8 @@ class Game {
 
         const shopItems = [
             { id: 'revive', name: 'REVIVE', desc: '+1 Life', price: 25, icon: '\u2665', color: [255, 80, 120], available: true },
+            { id: 'speedster', name: 'SPEEDSTER', desc: '+Speed', price: 50, icon: '»', color: [0, 255, 255], available: true },
             { id: 'soon1', name: 'COMING', desc: 'SOON', price: null, icon: '?', color: [100, 100, 130], available: false },
-            { id: 'soon2', name: 'COMING', desc: 'SOON', price: null, icon: '?', color: [100, 100, 130], available: false },
         ];
 
         for (let i = 0; i < shopItems.length; i++) {
@@ -2590,17 +2632,34 @@ class Game {
             const iy = drawY + row * (itemCardH + 10);
 
             const iAvail = item.available;
-            const iBg = iAvail ? 22 : 10;
-            fillRoundedRect(ctx, ix, iy, itemCardW, itemCardH, 7,
-                rgba(item.color[0], item.color[1], item.color[2], iBg));
+            
+            // Drop shadow
+            fillRoundedRect(ctx, ix + 3, iy + 4, itemCardW, itemCardH, 7, rgba(0, 0, 0, 130));
+
+            // 3D Background
+            const bgGrad = ctx.createLinearGradient(0, iy, 0, iy + itemCardH);
+            if (iAvail) {
+                bgGrad.addColorStop(0, rgba(item.color[0], item.color[1], item.color[2], 50));
+                bgGrad.addColorStop(1, rgba(item.color[0], item.color[1], item.color[2], 15));
+            } else {
+                bgGrad.addColorStop(0, rgba(item.color[0], item.color[1], item.color[2], 20));
+                bgGrad.addColorStop(1, rgba(item.color[0], item.color[1], item.color[2], 5));
+            }
+            fillRoundedRect(ctx, ix, iy, itemCardW, itemCardH, 7, bgGrad);
             drawRoundedRect(ctx, ix, iy, itemCardW, itemCardH, 7);
-            ctx.strokeStyle = rgba(item.color[0], item.color[1], item.color[2], iAvail ? 80 : 35);
-            ctx.lineWidth = 1; ctx.stroke();
+            ctx.strokeStyle = rgba(item.color[0], item.color[1], item.color[2], iAvail ? 120 : 40);
+            ctx.lineWidth = 1.5; ctx.stroke();
+            
+            // Top shine
+            const shine = ctx.createLinearGradient(ix, iy, ix, iy + itemCardH * 0.35);
+            shine.addColorStop(0, rgba(255, 255, 255, iAvail ? 30 : 10));
+            shine.addColorStop(1, rgba(255, 255, 255, 0));
+            fillRoundedRect(ctx, ix + 1, iy + 1, itemCardW - 2, itemCardH * 0.35, 6, shine);
 
             // Icon
             const iconFontSize = h * 0.060;
             const iconW = textWidth(ctx, item.icon, iconFontSize);
-            drawText(ctx, item.icon, ix + (itemCardW - iconW) / 2, iy + itemCardH * 0.18,
+            drawText(ctx, item.icon, ix + (itemCardW - iconW) / 2, iy + itemCardH * 0.22,
                 iconFontSize, rgba(item.color[0], item.color[1], item.color[2], iAvail ? 220 : 80));
 
             // Name
@@ -2616,19 +2675,29 @@ class Game {
                 const descW = textWidth(ctx, descText, descSize);
                 drawText(ctx, descText, ix + (itemCardW - descW) / 2, iy + itemCardH * 0.70,
                     descSize, rgba(180, 200, 220, 160));
+                    
+                let isBoughtOut = false;
+                if (item.id === 'speedster' && this.speedsterActive) isBoughtOut = true;
 
-                const iPriceText = `${item.price}`;
-                const iPriceSize = h * 0.022;
-                const iPriceW = textWidth(ctx, iPriceText, iPriceSize);
-                const px = ix + (itemCardW - iPriceW) / 2 + h * 0.015;
+                if (isBoughtOut) {
+                    const activeText = 'ACTIVE';
+                    const actSize = h * 0.024;
+                    const actW = textWidth(ctx, activeText, actSize);
+                    drawText(ctx, activeText, ix + (itemCardW - actW) / 2, iy + itemCardH * 0.88, actSize, rgba(item.color[0], item.color[1], item.color[2], 255));
+                } else {
+                    const iPriceText = `${item.price}`;
+                    const iPriceSize = h * 0.022;
+                    const iPriceW = textWidth(ctx, iPriceText, iPriceSize);
+                    const px = ix + (itemCardW - iPriceW) / 2 + h * 0.015;
 
-                ctx.beginPath();
-                ctx.arc(px - h * 0.018, iy + itemCardH * 0.88 - iPriceSize * 0.30, h * 0.015, 0, Math.PI * 2);
-                ctx.fillStyle = rgba(255, 215, 0); ctx.fill();
-                ctx.strokeStyle = rgba(255, 255, 255, 150); ctx.lineWidth = 1; ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(px - h * 0.018, iy + itemCardH * 0.88 - iPriceSize * 0.30, h * 0.015, 0, Math.PI * 2);
+                    ctx.fillStyle = rgba(255, 215, 0); ctx.fill();
+                    ctx.strokeStyle = rgba(255, 255, 255, 150); ctx.lineWidth = 1; ctx.stroke();
 
-                drawText(ctx, iPriceText, px, iy + itemCardH * 0.88,
-                    iPriceSize, this.coins >= item.price ? rgba(255, 210, 0) : rgba(255, 70, 70));
+                    drawText(ctx, iPriceText, px, iy + itemCardH * 0.88,
+                        iPriceSize, this.coins >= item.price ? rgba(255, 210, 0) : rgba(255, 70, 70));
+                }
             } else {
                 const descSize = h * 0.020;
                 const descW = textWidth(ctx, item.desc, descSize);
@@ -4139,6 +4208,24 @@ class Game {
         const stageSize = h * 0.035;
         const stageW = textWidth(ctx, stageText, stageSize);
         drawText(ctx, stageText, w * 0.97 - stageW, timerY + timerBoxH + 25 + titleSize + 4, stageSize, rgba(200, 220, 255, 200));
+
+        // Speedster Indicator above right navigation button
+        if (this.speedsterActive) {
+            const btnScale = (this.btnScale || 100) / 100;
+            const btnSz = 70 * btnScale;
+            const iconX = w - 20 - btnSz / 2;
+            const iconY = h - 30 - btnSz;
+            
+            const rad = h * 0.03;
+            fillRoundedRect(ctx, iconX - rad, iconY - rad, rad*2, rad*2, rad, rgba(0, 255, 255, 40));
+            drawRoundedRect(ctx, iconX - rad, iconY - rad, rad*2, rad*2, rad);
+            ctx.strokeStyle = rgba(0, 255, 255, 200); ctx.lineWidth = 2; ctx.stroke();
+            
+            const sTxt = '»';
+            const sSz = h * 0.045;
+            const sW = textWidth(ctx, sTxt, sSz);
+            drawText(ctx, sTxt, iconX - sW/2 + 2, iconY + sSz/3 - 4, sSz, rgba(255, 255, 255, 255));
+        }
     }
 
     drawBevelHighlight(ctx, bx, by, bw, bh) {
