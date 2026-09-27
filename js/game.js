@@ -99,6 +99,12 @@ class Game {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
+        
+        // Static background cache to eliminate 3D rendering heat
+        this.bgCanvas = document.createElement('canvas');
+        this.bgCtx = this.bgCanvas.getContext('2d', { alpha: false });
+        this.bgPrerendered = false;
+        
         this.audio = new AudioManager();
 
         this.state = GameState.Menu;
@@ -347,6 +353,9 @@ class Game {
 
         if (!isFinite(this.gameScaleX) || this.gameScaleX <= 0) this.gameScaleX = 1;
         if (!isFinite(this.gameScaleY) || this.gameScaleY <= 0) this.gameScaleY = 1;
+        
+        // Force background to re-render to new size
+        this.bgPrerendered = false;
     }
 
     // ─── Init Methods ─────────────────────────────────
@@ -3297,8 +3306,25 @@ class Game {
         ctx.fillRect(-sx, -sy, w, h);
 
         // ── FULL SCREEN BACKGROUND ──
-        this.drawStars(ctx, w, h);
-        this.drawCyberGrid(ctx, w, h);
+        if (!this.bgPrerendered || this.bgCanvas.width !== w || this.bgCanvas.height !== h) {
+            this.bgCanvas.width = w;
+            this.bgCanvas.height = h;
+            this.bgCtx.clearRect(0, 0, w, h);
+            
+            // Draw to the cache ONCE
+            this.drawStars(this.bgCtx, w, h);
+            
+            // Lock speed variable temporarily so the static grid always looks nice
+            const originalSpeed = this.backgroundSpeed;
+            this.backgroundSpeed = 0.5; // Always draw perfectly aligned 
+            this.drawCyberGrid(this.bgCtx, w, h);
+            this.backgroundSpeed = originalSpeed;
+            
+            this.bgPrerendered = true;
+        }
+
+        // Draw the cached background image (0 math operations!)
+        ctx.drawImage(this.bgCanvas, 0, 0);
 
         // ── GAME VIEW (320×240 virtual) ──
         ctx.save();
@@ -3394,16 +3420,16 @@ class Game {
             const bowl = m * m * 0.02;
 
             let h = bowl;
-            
+
             // Skip expensive trig functions for the flat valley center
             if (m > 0) {
                 // Lower frequency, wider rolling hills for a natural look
                 const hill1 = Math.sin(x3d * 0.3 + z * 0.2) * 2.5;
                 const hill2 = Math.cos(x3d * 0.5 - z * 0.15) * 1.5;
-                
+
                 let t = Math.min(1.0, m / 12.0); // Blends completely over 12 units
                 let hillMask = t * t * (3 - 2 * t); // Smoothstep easing
-                
+
                 h += (hill1 + hill2) * hillMask;
             }
 
