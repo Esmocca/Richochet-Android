@@ -3402,36 +3402,38 @@ class Game {
 
         // 4. Grid & Mountains with real 3D perspective
         const linesZ = 30; // Number of horizontal lines receding into distance
-        const linesX = 40; // Number of vertical lines across
+        const linesX = 50; // More vertical lines for smooth wide spread
 
         const cameraY = 1.4; // Camera height above the ground
         const cameraZ = 2.0; // Distance to the nearest visible grid line
         const zSpacing = 1.5; // Spacing between Z lines
         const fovScale = h * 0.8; // Perspective scaling factor
 
-        const getH = (nx, z) => {
-            const absNx = Math.abs(nx);
-            
-            // Base bowl curve: smooth valley in the center, high mountains on the sides
-            let base = Math.pow(absNx, 2.0) * 5.0;
-            
-            // Smooth rolling hills (low frequency to avoid jagged aliasing)
-            const hill1 = Math.sin(nx * 3.0 + z * 0.3) * 1.5;
-            const hill2 = Math.cos(nx * 5.0 - z * 0.2) * 1.0;
-            const hill3 = Math.sin(nx * 2.5 + z * 0.5) * 0.8;
-            
-            let h = base + hill1 + hill2 + hill3;
-            
-            // Sink it slightly so the center forms a flat path
-            h -= 1.5;
-            h = Math.max(0, h);
-            
-            // Add extremely smooth subtle bumps to the flat valley floor
-            if (h === 0) {
-                h = (Math.sin(nx * 8.0 + z * 0.4) + 1.0) * 0.1; // Smooth 0 to 0.2
+        const getH = (x3d, z) => {
+            const absX = Math.abs(x3d);
+
+            // Perfect flat valley in the center (clear space for gameplay)
+            const valleyWidth = 2.2;
+            if (absX < valleyWidth) {
+                return 0; 
             }
+
+            // Mountain region starts beyond the valley
+            const m = absX - valleyWidth; 
             
-            return h;
+            // Smoothly ease the mountains up to avoid a sharp wall
+            const ease = 1.0 - 1.0 / (1.0 + m * 0.8);
+
+            // Base slope rises exponentially to create towering walls
+            let h = Math.pow(m, 1.3) * 1.2;
+
+            // Smooth rolling hills that travel along Z
+            const hill1 = Math.sin(x3d * 0.6 + z * 0.4) * 2.5;
+            const hill2 = Math.cos(x3d * 0.9 - z * 0.3) * 1.5;
+
+            h += (hill1 + hill2) * ease;
+
+            return Math.max(0, h);
         };
 
         const project = (x3d, y3d, z3d) => {
@@ -3457,10 +3459,14 @@ class Game {
             ctx.strokeStyle = rgba(r, g, b, lineAlpha);
 
             ctx.beginPath();
-            for (let j = 0; j <= linesX; j++) {
-                const nx = (j / linesX) * 2 - 1; // -1 to 1
-                const x3d = nx * 8.0; // Span widely across the X axis
-                const y3d = getH(nx, zRaw + speed);
+            
+            // Use 80 segments to draw the horizontal mountain contours smoothly
+            const hSegments = 80;
+            for (let j = 0; j <= hSegments; j++) {
+                const t = (j / hSegments) * 2 - 1; // -1 to 1
+                // Non-linear spread (tangent) allows grid to extend infinitely sideways!
+                const x3d = Math.tan(t * 1.45) * 6.0; 
+                const y3d = getH(x3d, zRaw + speed);
 
                 const pt = project(x3d, y3d, z3d);
 
@@ -3472,8 +3478,9 @@ class Game {
 
         // Draw vertical lines (X)
         for (let j = 0; j <= linesX; j++) {
-            const nx = (j / linesX) * 2 - 1;
-            const x3d = nx * 8.0;
+            const t = (j / linesX) * 2 - 1;
+            // Match the horizontal spread exactly
+            const x3d = Math.tan(t * 1.45) * 6.0;
 
             // Gradient fades to transparent at the top (horizon/mountain peaks)
             const vGrad = ctx.createLinearGradient(0, horizonY - h * 0.25, 0, horizonY + h * 0.1);
@@ -3489,7 +3496,7 @@ class Game {
                 if (zRaw > linesZ) zRaw = linesZ;
 
                 const z3d = cameraZ + zRaw * zSpacing;
-                const y3d = getH(nx, zRaw + speed);
+                const y3d = getH(x3d, zRaw + speed);
 
                 const pt = project(x3d, y3d, z3d);
 
