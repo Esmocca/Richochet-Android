@@ -3377,33 +3377,26 @@ class Game {
         // 2. Glowing sun/core behind mountains
         const sunX = w / 2;
         const sunY = horizonY;
-        const sunRad = h * 0.28;
+        const sunRad = h * 0.35; // slightly larger for a softer blend
 
-        const sunGrad = ctx.createLinearGradient(0, sunY - sunRad, 0, sunY);
-        sunGrad.addColorStop(0, rgba(0, 255, 255, 200 * alpha));
-        sunGrad.addColorStop(1, rgba(0, 50, 180, 250 * alpha));
+        // Soft radial blend for the sun
+        const sunGrad = ctx.createRadialGradient(sunX, sunY, sunRad * 0.2, sunX, sunY, sunRad);
+        sunGrad.addColorStop(0, rgba(0, 255, 255, 255 * alpha));
+        sunGrad.addColorStop(0.5, rgba(0, 150, 255, 120 * alpha));
+        sunGrad.addColorStop(1, rgba(0, 50, 180, 0)); // Fade out completely
 
         ctx.beginPath();
-        ctx.arc(sunX, sunY, sunRad, Math.PI, 0);
+        // Draw the sun as a rectangle that covers the upper half to utilize the radial fade
+        ctx.rect(0, 0, w, horizonY);
         ctx.fillStyle = sunGrad;
         ctx.fill();
 
-        // 3. Horizon glow
-        const glowRad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunRad * 1.8);
+        // 3. Horizon glow (softens the mountain base further in distance)
+        const glowRad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunRad * 1.5);
         glowRad.addColorStop(0, rgba(0, 150, 255, 120 * alpha));
         glowRad.addColorStop(1, rgba(0, 150, 255, 0));
         ctx.fillStyle = glowRad;
         ctx.fillRect(0, horizonY, w, h - horizonY);
-
-        ctx.beginPath();
-        ctx.moveTo(0, horizonY);
-        ctx.lineTo(w, horizonY);
-        ctx.strokeStyle = rgba(0, 255, 255, 255 * alpha);
-        ctx.lineWidth = 2;
-        ctx.shadowColor = rgba(0, 255, 255, 255);
-        ctx.shadowBlur = 10;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
 
         // NO CLIPPING: Let mountains rise up into the sky over the sun!
 
@@ -3418,28 +3411,26 @@ class Game {
 
         const getH = (nx, z) => {
             const absNx = Math.abs(nx);
-            let h = 0;
-
-            // Major mountains (Macro structure)
-            h += Math.sin(nx * 4.0 + z * 0.2) * 3.0; // Huge rolling hills
-            h += Math.cos(nx * 7.0 - z * 0.3) * 2.0; // Secondary hills
-            h += Math.sin(nx * 13.0 + z * 0.5) * 1.0; // Details
-
-            // Bowl effect to ensure the sides are much higher than the center
-            h += Math.pow(absNx, 1.5) * 6.0;
-
-            // Create a valley in the center by shifting down and clamping
-            h -= 3.0;
+            
+            // Base bowl curve: smooth valley in the center, high mountains on the sides
+            let base = Math.pow(absNx, 2.0) * 5.0;
+            
+            // Smooth rolling hills (low frequency to avoid jagged aliasing)
+            const hill1 = Math.sin(nx * 3.0 + z * 0.3) * 1.5;
+            const hill2 = Math.cos(nx * 5.0 - z * 0.2) * 1.0;
+            const hill3 = Math.sin(nx * 2.5 + z * 0.5) * 0.8;
+            
+            let h = base + hill1 + hill2 + hill3;
+            
+            // Sink it slightly so the center forms a flat path
+            h -= 1.5;
             h = Math.max(0, h);
-
-            // Add grid floor details (so the valley isn't completely smooth)
+            
+            // Add extremely smooth subtle bumps to the flat valley floor
             if (h === 0) {
-                h = Math.abs(Math.sin(nx * 20.0 + z * 0.8)) * 0.15;
-            } else {
-                // Add sharp ridges to mountains
-                h += Math.abs(Math.sin(nx * 15.0 + z * 0.6)) * 0.8;
+                h = (Math.sin(nx * 8.0 + z * 0.4) + 1.0) * 0.1; // Smooth 0 to 0.2
             }
-
+            
             return h;
         };
 
