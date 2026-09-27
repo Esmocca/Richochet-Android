@@ -3302,11 +3302,11 @@ class Game {
         ctx.translate(gv.x || 0, gv.y || 0);
         ctx.scale(gameScaleX, gameScaleY);
 
-        // Scrolling cyber grid
-        this.drawCyberGrid(ctx);
-
-        // Starfield (parallax)
+        // Starfield (parallax) - drawn behind mountains
         this.drawStars(ctx);
+
+        // Scrolling cyber mountain grid
+        this.drawCyberGrid(ctx);
 
         // Menu decorative bricks removed
 
@@ -3358,30 +3358,138 @@ class Game {
     }
 
     drawCyberGrid(ctx) {
-        const gridSpeed = 25;
-        const gridSpacing = 20;
-        const startY = (this.menuAnimTimer * gridSpeed) % gridSpacing;
         const isMenu = this.state === GameState.Menu || this.state === GameState.Options || this.state === GameState.Shop;
-        const alpha = isMenu ? 30 : 14;
-        const color = rgba(0, 120, 255, alpha);
+        const alpha = isMenu ? 1.0 : 0.35;
+        
+        // Base color for blue synthwave
+        const r = 0, g = 180, b = 255;
+        
+        const horizonY = V_HEIGHT * 0.45;
+        const speed = this.menuAnimTimer * (isMenu ? 4 : 2);
+        
+        ctx.save();
+        
+        // 1. Solid dark background (retro night sky)
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+        bgGrad.addColorStop(0, rgba(2, 4, 15, 255));
+        bgGrad.addColorStop(1, rgba(20, 30, 50, 255));
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
 
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 0.5;
+        // 2. Glowing sun/core behind mountains
+        const sunX = V_WIDTH / 2;
+        const sunY = horizonY;
+        const sunRad = V_HEIGHT * 0.28;
+        
+        const sunGrad = ctx.createLinearGradient(0, sunY - sunRad, 0, sunY);
+        sunGrad.addColorStop(0, rgba(0, 255, 255, 200 * alpha));
+        sunGrad.addColorStop(1, rgba(0, 50, 180, 250 * alpha));
+        
+        ctx.beginPath();
+        ctx.arc(sunX, sunY, sunRad, Math.PI, 0); 
+        ctx.fillStyle = sunGrad;
+        ctx.fill();
 
-        // Horizontal lines
-        for (let y = startY; y < V_HEIGHT; y += gridSpacing) {
+        // 3. Horizon glow
+        const glowRad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunRad * 1.8);
+        glowRad.addColorStop(0, rgba(0, 150, 255, 120 * alpha));
+        glowRad.addColorStop(1, rgba(0, 150, 255, 0));
+        ctx.fillStyle = glowRad;
+        ctx.fillRect(0, horizonY, V_WIDTH, V_HEIGHT - horizonY);
+
+        ctx.beginPath();
+        ctx.moveTo(0, horizonY);
+        ctx.lineTo(V_WIDTH, horizonY);
+        ctx.strokeStyle = rgba(0, 255, 255, 255 * alpha);
+        ctx.lineWidth = 2;
+        ctx.shadowColor = rgba(0, 255, 255, 255);
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        
+        // Clip everything below horizon for the grid
+        ctx.beginPath();
+        ctx.rect(0, horizonY, V_WIDTH, V_HEIGHT - horizonY);
+        ctx.clip(); 
+
+        // 4. Grid & Mountains
+        const linesZ = 22;
+        const linesX = 35;
+        
+        const getH = (x, z) => {
+            const nx = (x - V_WIDTH / 2) / (V_WIDTH / 2); 
+            const envelope = Math.pow(Math.abs(nx), 1.6); 
+            
+            const wave1 = Math.sin(nx * 5 + z * 0.3) * 15;
+            const wave2 = Math.sin(nx * 8 + z * 0.15) * 8;
+            const wave3 = Math.sin(nx * 2 + z * 0.5) * 20;
+            
+            return (wave1 + wave2 + wave3) * envelope + (envelope * 70);
+        };
+
+        ctx.lineWidth = 1.2;
+
+        // Draw horizontal lines (Z)
+        for (let i = 0; i < linesZ; i++) {
+            let zRaw = i - (speed % 1);
+            let zPhase = zRaw / linesZ; 
+            if (zPhase < 0) continue;
+            
+            const pz = Math.pow(zPhase, 1.8); 
+            const screenY = horizonY + (1 - pz) * (V_HEIGHT - horizonY);
+            
+            const lineAlpha = Math.min(255, Math.floor((1 - pz) * 400)) * alpha;
+            ctx.strokeStyle = rgba(r, g, b, lineAlpha);
+            
             ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(V_WIDTH, y);
+            for (let j = 0; j <= linesX; j++) {
+                const x = (j / linesX) * V_WIDTH;
+                const height = getH(x, zRaw + speed);
+                
+                const nx = (x - V_WIDTH / 2);
+                const scaleX = (1 - pz) * 1.2 + 0.1;
+                const px = V_WIDTH / 2 + nx * scaleX;
+                const py = screenY - height * (1 - pz);
+                
+                if (j === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
             ctx.stroke();
         }
-        // Vertical lines
-        for (let x = 0; x < V_WIDTH; x += gridSpacing) {
+
+        // Draw vertical lines (X)
+        for (let j = 0; j <= linesX; j++) {
+            const x = (j / linesX) * V_WIDTH;
+            
+            const vGrad = ctx.createLinearGradient(0, horizonY, 0, V_HEIGHT);
+            vGrad.addColorStop(0, rgba(r, g, b, 0));
+            vGrad.addColorStop(1, rgba(r, g, b, 255 * alpha));
+            ctx.strokeStyle = vGrad;
+            
             ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, V_HEIGHT);
+            let first = true;
+            for (let i = 0; i <= linesZ; i++) {
+                let zRaw = i - (speed % 1);
+                if (zRaw < 0) zRaw = 0;
+                if (zRaw > linesZ) zRaw = linesZ;
+
+                let zPhase = zRaw / linesZ; 
+                const pz = Math.pow(zPhase, 1.8);
+                const sy = horizonY + (1 - pz) * (V_HEIGHT - horizonY);
+                
+                const height = getH(x, zRaw + speed);
+                const nx = (x - V_WIDTH / 2);
+                const scaleX = (1 - pz) * 1.2 + 0.1;
+                const px = V_WIDTH / 2 + nx * scaleX;
+                const py = sy - height * (1 - pz);
+                
+                if (first) { ctx.moveTo(px, py); first = false; }
+                else ctx.lineTo(px, py);
+            }
             ctx.stroke();
         }
+
+        ctx.restore();
     }
 
     drawGameObjects(ctx) {
