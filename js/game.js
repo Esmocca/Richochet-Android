@@ -3374,33 +3374,7 @@ class Game {
         ctx.fillStyle = bgGrad;
         ctx.fillRect(0, 0, w, h);
 
-        // 2. Glowing sun/core behind mountains
-        const sunX = w / 2;
-        const sunY = horizonY;
-        const sunRad = h * 0.35; // slightly larger for a softer blend
-
-        // Soft radial blend for the sun
-        const sunGrad = ctx.createRadialGradient(sunX, sunY, sunRad * 0.2, sunX, sunY, sunRad);
-        sunGrad.addColorStop(0, rgba(0, 255, 255, 255 * alpha));
-        sunGrad.addColorStop(0.5, rgba(0, 150, 255, 120 * alpha));
-        sunGrad.addColorStop(1, rgba(0, 50, 180, 0)); // Fade out completely
-
-        ctx.beginPath();
-        // Draw the sun as a rectangle that covers the upper half to utilize the radial fade
-        ctx.rect(0, 0, w, horizonY);
-        ctx.fillStyle = sunGrad;
-        ctx.fill();
-
-        // 3. Horizon glow (softens the mountain base further in distance)
-        const glowRad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunRad * 1.5);
-        glowRad.addColorStop(0, rgba(0, 150, 255, 120 * alpha));
-        glowRad.addColorStop(1, rgba(0, 150, 255, 0));
-        ctx.fillStyle = glowRad;
-        ctx.fillRect(0, horizonY, w, h - horizonY);
-
-        // NO CLIPPING: Let mountains rise up into the sky over the sun!
-
-        // 4. Grid & Mountains with real 3D perspective
+        // 2. Grid Constants and Math
         const linesZ = 35; // Depth lines
         const linesX = 80; // Width lines for uniform density
 
@@ -3414,30 +3388,30 @@ class Game {
 
             // Distance from the flat center (clear gameplay space)
             const m = Math.max(0, absX - 2.5); // flat center width ~ 5.0
-            
+
             // Extremely smooth, quadratic bowl that blends perfectly from the flat center
             // At m=0, derivative is 0 -> perfectly smooth transition!
-            const bowl = m * m * 0.02; 
-            
+            const bowl = m * m * 0.02;
+
             // Lower frequency, wider rolling hills for a natural look
             const hill1 = Math.sin(x3d * 0.3 + z * 0.2) * 2.5;
             const hill2 = Math.cos(x3d * 0.5 - z * 0.15) * 1.5;
-            
+
             // Smoothly ease in the hills so they don't abruptly start at the valley edge
             let hillMask = 0;
             if (m > 0) {
                 let t = Math.min(1.0, m / 12.0); // Blends completely over 12 units
                 hillMask = t * t * (3 - 2 * t); // Smoothstep easing
             }
-            
+
             // Small, smooth bumps in the valley
             const centerBumps = (Math.sin(x3d * 1.5 + z * 0.6) + Math.cos(x3d * 2.0 - z * 0.4)) * 0.12;
-            
+
             let h = bowl + (hill1 + hill2) * hillMask;
-            
+
             // Keep it positive, add subtle bumps
             h = Math.max(0, h) + centerBumps + 0.2;
-            
+
             return h;
         };
 
@@ -3449,6 +3423,51 @@ class Game {
             return { px, py };
         };
 
+        // 3. Sun and Sky Masking
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(w, 0);
+        ctx.lineTo(0, 0);
+        
+        // Trace furthest mountain line to create a silhouette mask!
+        const maxZRaw = linesZ - 1 - (speed % 1);
+        const z3dFar = cameraZ + maxZRaw * zSpacing;
+        const hSegMask = 120;
+        for (let j = 0; j <= hSegMask; j++) {
+            const t = (j / hSegMask) * 2 - 1;
+            const x3d = t * 35.0;
+            const y3d = getH(x3d, maxZRaw + speed);
+            const pt = project(x3d, y3d, z3dFar);
+            if (j === 0) ctx.lineTo(pt.px, pt.py);
+            else ctx.lineTo(pt.px, pt.py);
+        }
+        ctx.closePath();
+        ctx.clip(); // Mask applied!
+
+        // Glowing sun/core behind mountains
+        const sunX = w / 2;
+        const sunY = horizonY;
+        const sunRad = h * 0.35; // slightly larger for a softer blend
+
+        // Soft radial blend for the sun
+        const sunGrad = ctx.createRadialGradient(sunX, sunY, sunRad * 0.2, sunX, sunY, sunRad);
+        sunGrad.addColorStop(0, rgba(0, 255, 255, 255 * alpha));
+        sunGrad.addColorStop(0.5, rgba(0, 150, 255, 120 * alpha));
+        sunGrad.addColorStop(1, rgba(0, 50, 180, 0)); // Fade out completely
+
+        ctx.fillStyle = sunGrad;
+        ctx.fillRect(0, 0, w, h); // Draw full screen, mask will clip it
+
+        // Horizon glow (softens the mountain base further in distance)
+        const glowRad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunRad * 1.5);
+        glowRad.addColorStop(0, rgba(0, 150, 255, 120 * alpha));
+        glowRad.addColorStop(1, rgba(0, 150, 255, 0));
+        ctx.fillStyle = glowRad;
+        ctx.fillRect(0, 0, w, h); // Draw full screen, mask will clip it
+        
+        ctx.restore(); // Remove clipping
+
+        // 4. Draw Grid Wireframes
         ctx.lineWidth = 1.0;
 
         // Draw horizontal lines (Z)
@@ -3724,8 +3743,12 @@ class Game {
         if (this.state === GameState.Menu) {
             this.drawMenu(ctx, w, h);
         } else if (this.state === GameState.Options) {
+            ctx.fillStyle = rgba(10, 15, 25, 160); // Dark overlay
+            ctx.fillRect(0, 0, w, h);
             this.drawOptions(ctx, w, h);
         } else if (this.state === GameState.Shop) {
+            ctx.fillStyle = rgba(10, 15, 25, 160); // Dark overlay
+            ctx.fillRect(0, 0, w, h);
             this.drawShop(ctx, w, h);
         } else if (this.state === GameState.Paused) {
             this.drawPauseMenu(ctx, w, h);
