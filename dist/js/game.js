@@ -3405,24 +3405,40 @@ class Game {
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        // Clip everything below horizon for the grid
-        ctx.beginPath();
-        ctx.rect(0, horizonY, w, h - horizonY);
-        ctx.clip();
+        // NO CLIPPING: Let mountains rise up into the sky over the sun!
 
-        // 4. Grid & Mountains
-        const linesZ = 25;
-        const linesX = 45;
+        // 4. Grid & Mountains with real 3D perspective
+        const linesZ = 30; // Number of horizontal lines receding into distance
+        const linesX = 40; // Number of vertical lines across
+        
+        const cameraY = 1.4; // Camera height above the ground
+        const cameraZ = 2.0; // Distance to the nearest visible grid line
+        const zSpacing = 1.5; // Spacing between Z lines
+        const fovScale = h * 0.8; // Perspective scaling factor
 
-        const getH = (x, z) => {
-            const nx = (x - w / 2) / (w / 2);
-            // Envelope: 0 at center, steep at sides
-            const envelope = Math.pow(Math.abs(nx), 2.5);
+        const getH = (nx, z) => {
+            const absNx = Math.abs(nx);
+            
+            // Flat valley in the center, steep mountains on the sides
+            let mountainH = 0;
+            if (absNx > 0.15) {
+                // Rises up steeply
+                mountainH = Math.pow((absNx - 0.15) / 0.85, 2.0) * 3.5;
+            }
+            
+            // Add waves/peaks
+            const wave1 = Math.sin(nx * 12 + z * 0.4) * 0.4;
+            const wave2 = Math.cos(nx * 8 + z * 0.6) * 0.2;
+            
+            return mountainH + (wave1 + wave2) * Math.pow(absNx, 1.2);
+        };
 
-            const wave1 = Math.sin(nx * 12 + z * 0.5) * 30;
-            const wave2 = Math.cos(nx * 7 + z * 0.3) * 20;
-
-            return (wave1 + wave2) * envelope + (envelope * 150);
+        const project = (x3d, y3d, z3d) => {
+            const scale = fovScale / z3d;
+            const px = w / 2 + x3d * scale;
+            // py can be < horizonY if the point is higher than the camera!
+            const py = horizonY + (cameraY - y3d) * scale;
+            return { px, py };
         };
 
         ctx.lineWidth = 1.2;
@@ -3430,59 +3446,54 @@ class Game {
         // Draw horizontal lines (Z)
         for (let i = 0; i < linesZ; i++) {
             let zRaw = i - (speed % 1);
-            let zPhase = zRaw / linesZ;
-            if (zPhase < 0) continue;
-
-            const pz = Math.pow(zPhase, 1.8);
-            const screenY = horizonY + (1 - pz) * (h - horizonY);
-
-            const lineAlpha = Math.min(255, Math.floor((1 - pz) * 400)) * alpha;
+            if (zRaw < 0) continue;
+            
+            const z3d = cameraZ + zRaw * zSpacing;
+            
+            // Fade out in the distance
+            const fade = Math.max(0, 1 - (zRaw / linesZ));
+            const lineAlpha = 255 * fade * alpha;
             ctx.strokeStyle = rgba(r, g, b, lineAlpha);
-
+            
             ctx.beginPath();
             for (let j = 0; j <= linesX; j++) {
-                const x = (j / linesX) * w;
-                const height = getH(x, zRaw + speed);
-
-                const nx = (x - w / 2);
-                const scaleX = (1 - pz) * 1.5 + 0.05;
-                const px = w / 2 + nx * scaleX;
-                const py = screenY - height * (1 - pz);
-
-                if (j === 0) ctx.moveTo(px, py);
-                else ctx.lineTo(px, py);
+                const nx = (j / linesX) * 2 - 1; // -1 to 1
+                const x3d = nx * 5.0; // Span widely across the X axis
+                const y3d = getH(nx, zRaw + speed);
+                
+                const pt = project(x3d, y3d, z3d);
+                
+                if (j === 0) ctx.moveTo(pt.px, pt.py);
+                else ctx.lineTo(pt.px, pt.py);
             }
             ctx.stroke();
         }
 
         // Draw vertical lines (X)
         for (let j = 0; j <= linesX; j++) {
-            const x = (j / linesX) * w;
-
-            const vGrad = ctx.createLinearGradient(0, horizonY, 0, h);
+            const nx = (j / linesX) * 2 - 1;
+            const x3d = nx * 5.0;
+            
+            // Gradient fades to transparent at the top (horizon)
+            const vGrad = ctx.createLinearGradient(0, horizonY - h * 0.2, 0, h);
             vGrad.addColorStop(0, rgba(r, g, b, 0));
             vGrad.addColorStop(1, rgba(r, g, b, 255 * alpha));
             ctx.strokeStyle = vGrad;
-
+            
             ctx.beginPath();
             let first = true;
             for (let i = 0; i <= linesZ; i++) {
                 let zRaw = i - (speed % 1);
                 if (zRaw < 0) zRaw = 0;
                 if (zRaw > linesZ) zRaw = linesZ;
-
-                let zPhase = zRaw / linesZ;
-                const pz = Math.pow(zPhase, 1.8);
-                const sy = horizonY + (1 - pz) * (h - horizonY);
-
-                const height = getH(x, zRaw + speed);
-                const nx = (x - w / 2);
-                const scaleX = (1 - pz) * 1.5 + 0.05;
-                const px = w / 2 + nx * scaleX;
-                const py = sy - height * (1 - pz);
-
-                if (first) { ctx.moveTo(px, py); first = false; }
-                else ctx.lineTo(px, py);
+                
+                const z3d = cameraZ + zRaw * zSpacing;
+                const y3d = getH(nx, zRaw + speed);
+                
+                const pt = project(x3d, y3d, z3d);
+                
+                if (first) { ctx.moveTo(pt.px, pt.py); first = false; }
+                else ctx.lineTo(pt.px, pt.py);
             }
             ctx.stroke();
         }
