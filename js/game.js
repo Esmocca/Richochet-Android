@@ -3375,8 +3375,8 @@ class Game {
         ctx.fillRect(0, 0, w, h);
 
         // 2. Grid Constants and Math
-        const linesZ = 35; // Depth lines
-        const linesX = 80; // Width lines for uniform density
+        const linesZ = 24; // Depth lines (reduced for performance)
+        const linesX = 45; // Width lines (reduced for performance)
 
         const cameraY = 1.7; // Raised POV slightly
         const cameraZ = 2.0; // Distance to the nearest visible grid line
@@ -3393,21 +3393,22 @@ class Game {
             // At m=0, derivative is 0 -> perfectly smooth transition!
             const bowl = m * m * 0.02;
 
-            // Lower frequency, wider rolling hills for a natural look
-            const hill1 = Math.sin(x3d * 0.3 + z * 0.2) * 2.5;
-            const hill2 = Math.cos(x3d * 0.5 - z * 0.15) * 1.5;
-
-            // Smoothly ease in the hills so they don't abruptly start at the valley edge
-            let hillMask = 0;
+            let h = bowl;
+            
+            // Skip expensive trig functions for the flat valley center
             if (m > 0) {
+                // Lower frequency, wider rolling hills for a natural look
+                const hill1 = Math.sin(x3d * 0.3 + z * 0.2) * 2.5;
+                const hill2 = Math.cos(x3d * 0.5 - z * 0.15) * 1.5;
+                
                 let t = Math.min(1.0, m / 12.0); // Blends completely over 12 units
-                hillMask = t * t * (3 - 2 * t); // Smoothstep easing
+                let hillMask = t * t * (3 - 2 * t); // Smoothstep easing
+                
+                h += (hill1 + hill2) * hillMask;
             }
 
             // Small, smooth bumps in the valley
             const centerBumps = (Math.sin(x3d * 1.5 + z * 0.6) + Math.cos(x3d * 2.0 - z * 0.4)) * 0.12;
-
-            let h = bowl + (hill1 + hill2) * hillMask;
 
             // Keep it positive, add subtle bumps
             h = Math.max(0, h) + centerBumps + 0.2;
@@ -3428,11 +3429,11 @@ class Game {
         ctx.beginPath();
         ctx.moveTo(w, 0);
         ctx.lineTo(0, 0);
-        
+
         // Trace furthest mountain line to create a silhouette mask!
         const maxZRaw = linesZ - 1 - (speed % 1);
         const z3dFar = cameraZ + maxZRaw * zSpacing;
-        const hSegMask = 120;
+        const hSegMask = 45; // matched with horizontal segments for performance
         for (let j = 0; j <= hSegMask; j++) {
             const t = (j / hSegMask) * 2 - 1;
             const x3d = t * 35.0;
@@ -3464,7 +3465,7 @@ class Game {
         glowRad.addColorStop(1, rgba(0, 150, 255, 0));
         ctx.fillStyle = glowRad;
         ctx.fillRect(0, 0, w, h); // Draw full screen, mask will clip it
-        
+
         ctx.restore(); // Remove clipping
 
         // 4. Draw Grid Wireframes
@@ -3484,11 +3485,11 @@ class Game {
 
             ctx.beginPath();
 
-            // Increase horizontal segments for smoother rendering of mountains
-            const hSegments = 120;
+            // Match horizontal segments with linesX for optimal performance
+            const hSegments = linesX;
             for (let j = 0; j <= hSegments; j++) {
                 const t = (j / hSegments) * 2 - 1; // -1 to 1
-                // UNIFORM spread over a huge distance (-35 to 35) to fix the tunnel effect!
+                // UNIFORM spread over a huge distance (-35 to 35)
                 const x3d = t * 35.0;
                 const y3d = getH(x3d, zRaw + speed);
 
@@ -3500,16 +3501,16 @@ class Game {
             ctx.stroke();
         }
 
+        // Cache the vertical gradient ONCE outside the loop (Massive performance boost)
+        const vGrad = ctx.createLinearGradient(0, horizonY - h * 0.25, 0, horizonY + h * 0.1);
+        vGrad.addColorStop(0, rgba(r, g, b, 0));
+        vGrad.addColorStop(1, rgba(r, g, b, 255 * alpha));
+        ctx.strokeStyle = vGrad;
+
         // Draw vertical lines (X)
         for (let j = 0; j <= linesX; j++) {
             const t = (j / linesX) * 2 - 1;
             const x3d = t * 35.0; // Match the uniform horizontal spread
-
-            // Gradient fades to transparent at the top (horizon/mountain peaks)
-            const vGrad = ctx.createLinearGradient(0, horizonY - h * 0.25, 0, horizonY + h * 0.1);
-            vGrad.addColorStop(0, rgba(r, g, b, 0));
-            vGrad.addColorStop(1, rgba(r, g, b, 255 * alpha));
-            ctx.strokeStyle = vGrad;
 
             ctx.beginPath();
             let first = true;
