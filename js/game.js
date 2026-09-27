@@ -3404,7 +3404,7 @@ class Game {
         const linesZ = 35; // Depth lines
         const linesX = 80; // Width lines for uniform density
 
-        const cameraY = 1.2; // Camera height above the ground
+        const cameraY = 1.7; // Raised POV slightly
         const cameraZ = 2.0; // Distance to the nearest visible grid line
         const zSpacing = 1.5; // Spacing between Z lines
         const fovScale = h * 0.8; // Perspective scaling factor
@@ -3412,23 +3412,31 @@ class Game {
         const getH = (x3d, z) => {
             const absX = Math.abs(x3d);
 
-            // Small bumps in the center valley
-            const centerBumps = (Math.sin(x3d * 2.5 + z * 0.8) + Math.cos(x3d * 3.5 - z * 0.6)) * 0.15;
+            // Distance from the flat center (clear gameplay space)
+            const m = Math.max(0, absX - 2.5); // flat center width ~ 5.0
             
-            // Very gradual, wide bowl for the mountains
-            const bowl = Math.pow(absX * 0.1, 1.5) * 2.5;
+            // Extremely smooth, quadratic bowl that blends perfectly from the flat center
+            // At m=0, derivative is 0 -> perfectly smooth transition!
+            const bowl = m * m * 0.02; 
             
-            // Rolling hills on the sides
-            const hill1 = Math.sin(x3d * 0.5 + z * 0.3) * 1.5;
-            const hill2 = Math.cos(x3d * 0.8 - z * 0.2) * 0.8;
+            // Lower frequency, wider rolling hills for a natural look
+            const hill1 = Math.sin(x3d * 0.3 + z * 0.2) * 2.5;
+            const hill2 = Math.cos(x3d * 0.5 - z * 0.15) * 1.5;
             
-            // Scale hills so they are small in the center, large on the sides
-            const hillMask = Math.min(1.0, absX / 6.0);
+            // Smoothly ease in the hills so they don't abruptly start at the valley edge
+            let hillMask = 0;
+            if (m > 0) {
+                let t = Math.min(1.0, m / 12.0); // Blends completely over 12 units
+                hillMask = t * t * (3 - 2 * t); // Smoothstep easing
+            }
+            
+            // Small, smooth bumps in the valley
+            const centerBumps = (Math.sin(x3d * 1.5 + z * 0.6) + Math.cos(x3d * 2.0 - z * 0.4)) * 0.12;
             
             let h = bowl + (hill1 + hill2) * hillMask;
             
-            // Keep it positive and add center bumps, lift it slightly
-            h = Math.max(0, h) + centerBumps + 0.3;
+            // Keep it positive, add subtle bumps
+            h = Math.max(0, h) + centerBumps + 0.2;
             
             return h;
         };
@@ -3456,12 +3464,13 @@ class Game {
             ctx.strokeStyle = rgba(r, g, b, lineAlpha);
 
             ctx.beginPath();
-            
-            const hSegments = linesX;
+
+            // Increase horizontal segments for smoother rendering of mountains
+            const hSegments = 120;
             for (let j = 0; j <= hSegments; j++) {
                 const t = (j / hSegments) * 2 - 1; // -1 to 1
                 // UNIFORM spread over a huge distance (-35 to 35) to fix the tunnel effect!
-                const x3d = t * 35.0; 
+                const x3d = t * 35.0;
                 const y3d = getH(x3d, zRaw + speed);
 
                 const pt = project(x3d, y3d, z3d);
