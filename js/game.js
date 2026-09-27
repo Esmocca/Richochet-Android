@@ -3401,10 +3401,10 @@ class Game {
         // NO CLIPPING: Let mountains rise up into the sky over the sun!
 
         // 4. Grid & Mountains with real 3D perspective
-        const linesZ = 30; // Number of horizontal lines receding into distance
-        const linesX = 50; // More vertical lines for smooth wide spread
+        const linesZ = 35; // Depth lines
+        const linesX = 80; // Width lines for uniform density
 
-        const cameraY = 1.4; // Camera height above the ground
+        const cameraY = 1.2; // Camera height above the ground
         const cameraZ = 2.0; // Distance to the nearest visible grid line
         const zSpacing = 1.5; // Spacing between Z lines
         const fovScale = h * 0.8; // Perspective scaling factor
@@ -3412,28 +3412,25 @@ class Game {
         const getH = (x3d, z) => {
             const absX = Math.abs(x3d);
 
-            // Perfect flat valley in the center (clear space for gameplay)
-            const valleyWidth = 2.2;
-            if (absX < valleyWidth) {
-                return 0; 
-            }
-
-            // Mountain region starts beyond the valley
-            const m = absX - valleyWidth; 
+            // Small bumps in the center valley
+            const centerBumps = (Math.sin(x3d * 2.5 + z * 0.8) + Math.cos(x3d * 3.5 - z * 0.6)) * 0.15;
             
-            // Smoothly ease the mountains up to avoid a sharp wall
-            const ease = 1.0 - 1.0 / (1.0 + m * 0.8);
-
-            // Base slope rises exponentially to create towering walls
-            let h = Math.pow(m, 1.3) * 1.2;
-
-            // Smooth rolling hills that travel along Z
-            const hill1 = Math.sin(x3d * 0.6 + z * 0.4) * 2.5;
-            const hill2 = Math.cos(x3d * 0.9 - z * 0.3) * 1.5;
-
-            h += (hill1 + hill2) * ease;
-
-            return Math.max(0, h);
+            // Very gradual, wide bowl for the mountains
+            const bowl = Math.pow(absX * 0.1, 1.5) * 2.5;
+            
+            // Rolling hills on the sides
+            const hill1 = Math.sin(x3d * 0.5 + z * 0.3) * 1.5;
+            const hill2 = Math.cos(x3d * 0.8 - z * 0.2) * 0.8;
+            
+            // Scale hills so they are small in the center, large on the sides
+            const hillMask = Math.min(1.0, absX / 6.0);
+            
+            let h = bowl + (hill1 + hill2) * hillMask;
+            
+            // Keep it positive and add center bumps, lift it slightly
+            h = Math.max(0, h) + centerBumps + 0.3;
+            
+            return h;
         };
 
         const project = (x3d, y3d, z3d) => {
@@ -3460,12 +3457,11 @@ class Game {
 
             ctx.beginPath();
             
-            // Use 80 segments to draw the horizontal mountain contours smoothly
-            const hSegments = 80;
+            const hSegments = linesX;
             for (let j = 0; j <= hSegments; j++) {
                 const t = (j / hSegments) * 2 - 1; // -1 to 1
-                // Non-linear spread (tangent) allows grid to extend infinitely sideways!
-                const x3d = Math.tan(t * 1.45) * 6.0; 
+                // UNIFORM spread over a huge distance (-35 to 35) to fix the tunnel effect!
+                const x3d = t * 35.0; 
                 const y3d = getH(x3d, zRaw + speed);
 
                 const pt = project(x3d, y3d, z3d);
@@ -3479,8 +3475,7 @@ class Game {
         // Draw vertical lines (X)
         for (let j = 0; j <= linesX; j++) {
             const t = (j / linesX) * 2 - 1;
-            // Match the horizontal spread exactly
-            const x3d = Math.tan(t * 1.45) * 6.0;
+            const x3d = t * 35.0; // Match the uniform horizontal spread
 
             // Gradient fades to transparent at the top (horizon/mountain peaks)
             const vGrad = ctx.createLinearGradient(0, horizonY - h * 0.25, 0, horizonY + h * 0.1);
