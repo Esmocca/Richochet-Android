@@ -555,16 +555,16 @@ class Game {
         this.starLayers = [];
         // 3 parallax layers: far, mid, near
         const configs = [
-            { count: 50, speed: 3, sizeMax: 0.8, alphaMax: 0.3 },   // Far
-            { count: 35, speed: 8, sizeMax: 1.2, alphaMax: 0.5 },   // Mid
-            { count: 20, speed: 15, sizeMax: 2.0, alphaMax: 0.8 },  // Near
+            { count: 120, speed: 3, sizeMax: 0.8, alphaMax: 0.3 },   // Far
+            { count: 80, speed: 8, sizeMax: 1.2, alphaMax: 0.5 },   // Mid
+            { count: 40, speed: 15, sizeMax: 2.0, alphaMax: 0.8 },  // Near
         ];
         for (const cfg of configs) {
             const layer = [];
             for (let i = 0; i < cfg.count; i++) {
                 layer.push({
-                    x: Math.random() * V_WIDTH,
-                    y: Math.random() * V_HEIGHT,
+                    x: Math.random() * 2500, // Large bounds to fill any screen
+                    y: Math.random() * 2500,
                     size: 0.3 + Math.random() * cfg.sizeMax,
                     speed: cfg.speed + Math.random() * cfg.speed * 0.5,
                     alpha: 0.1 + Math.random() * cfg.alphaMax,
@@ -583,9 +583,9 @@ class Game {
             for (const s of this.starLayers[l]) {
                 s.y += s.speed * dt;
                 s.twinkle += dt * (2 + l);
-                if (s.y > V_HEIGHT) {
+                if (s.y > (this.h || 1200)) {
                     s.y = 0;
-                    s.x = Math.random() * V_WIDTH;
+                    s.x = Math.random() * (this.w || 2500);
                 }
             }
         }
@@ -3296,17 +3296,15 @@ class Game {
         ctx.fillStyle = rgba(12, 14, 24);
         ctx.fillRect(-sx, -sy, w, h);
 
+        // ── FULL SCREEN BACKGROUND ──
+        this.drawStars(ctx, w, h);
+        this.drawCyberGrid(ctx, w, h);
+
         // ── GAME VIEW (320×240 virtual) ──
         ctx.save();
         const gv = this.gameViewport || { x: 0, y: 0, w: w, h: h };
         ctx.translate(gv.x || 0, gv.y || 0);
         ctx.scale(gameScaleX, gameScaleY);
-
-        // Starfield (parallax) - drawn behind mountains
-        this.drawStars(ctx);
-
-        // Scrolling cyber mountain grid
-        this.drawCyberGrid(ctx);
 
         // Menu decorative bricks removed
 
@@ -3357,36 +3355,36 @@ class Game {
         }
     }
 
-    drawCyberGrid(ctx) {
+    drawCyberGrid(ctx, w, h) {
         const isMenu = this.state === GameState.Menu || this.state === GameState.Options || this.state === GameState.Shop;
         const alpha = isMenu ? 1.0 : 0.35;
-        
+
         // Base color for blue synthwave
         const r = 0, g = 180, b = 255;
-        
-        const horizonY = V_HEIGHT * 0.45;
+
+        const horizonY = h * 0.45;
         const speed = this.menuAnimTimer * (isMenu ? 4 : 2);
-        
+
         ctx.save();
-        
+
         // 1. Solid dark background (retro night sky)
         const bgGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
         bgGrad.addColorStop(0, rgba(2, 4, 15, 255));
         bgGrad.addColorStop(1, rgba(20, 30, 50, 255));
         ctx.fillStyle = bgGrad;
-        ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
+        ctx.fillRect(0, 0, w, h);
 
         // 2. Glowing sun/core behind mountains
-        const sunX = V_WIDTH / 2;
+        const sunX = w / 2;
         const sunY = horizonY;
-        const sunRad = V_HEIGHT * 0.28;
-        
+        const sunRad = h * 0.28;
+
         const sunGrad = ctx.createLinearGradient(0, sunY - sunRad, 0, sunY);
         sunGrad.addColorStop(0, rgba(0, 255, 255, 200 * alpha));
         sunGrad.addColorStop(1, rgba(0, 50, 180, 250 * alpha));
-        
+
         ctx.beginPath();
-        ctx.arc(sunX, sunY, sunRad, Math.PI, 0); 
+        ctx.arc(sunX, sunY, sunRad, Math.PI, 0);
         ctx.fillStyle = sunGrad;
         ctx.fill();
 
@@ -3395,36 +3393,36 @@ class Game {
         glowRad.addColorStop(0, rgba(0, 150, 255, 120 * alpha));
         glowRad.addColorStop(1, rgba(0, 150, 255, 0));
         ctx.fillStyle = glowRad;
-        ctx.fillRect(0, horizonY, V_WIDTH, V_HEIGHT - horizonY);
+        ctx.fillRect(0, horizonY, w, h - horizonY);
 
         ctx.beginPath();
         ctx.moveTo(0, horizonY);
-        ctx.lineTo(V_WIDTH, horizonY);
+        ctx.lineTo(w, horizonY);
         ctx.strokeStyle = rgba(0, 255, 255, 255 * alpha);
         ctx.lineWidth = 2;
         ctx.shadowColor = rgba(0, 255, 255, 255);
         ctx.shadowBlur = 10;
         ctx.stroke();
         ctx.shadowBlur = 0;
-        
+
         // Clip everything below horizon for the grid
         ctx.beginPath();
-        ctx.rect(0, horizonY, V_WIDTH, V_HEIGHT - horizonY);
-        ctx.clip(); 
+        ctx.rect(0, horizonY, w, h - horizonY);
+        ctx.clip();
 
         // 4. Grid & Mountains
-        const linesZ = 22;
-        const linesX = 35;
-        
+        const linesZ = 25;
+        const linesX = 45;
+
         const getH = (x, z) => {
-            const nx = (x - V_WIDTH / 2) / (V_WIDTH / 2); 
-            const envelope = Math.pow(Math.abs(nx), 1.6); 
-            
-            const wave1 = Math.sin(nx * 5 + z * 0.3) * 15;
-            const wave2 = Math.sin(nx * 8 + z * 0.15) * 8;
-            const wave3 = Math.sin(nx * 2 + z * 0.5) * 20;
-            
-            return (wave1 + wave2 + wave3) * envelope + (envelope * 70);
+            const nx = (x - w / 2) / (w / 2);
+            // Envelope: 0 at center, steep at sides
+            const envelope = Math.pow(Math.abs(nx), 2.5);
+
+            const wave1 = Math.sin(nx * 12 + z * 0.5) * 30;
+            const wave2 = Math.cos(nx * 7 + z * 0.3) * 20;
+
+            return (wave1 + wave2) * envelope + (envelope * 150);
         };
 
         ctx.lineWidth = 1.2;
@@ -3432,25 +3430,25 @@ class Game {
         // Draw horizontal lines (Z)
         for (let i = 0; i < linesZ; i++) {
             let zRaw = i - (speed % 1);
-            let zPhase = zRaw / linesZ; 
+            let zPhase = zRaw / linesZ;
             if (zPhase < 0) continue;
-            
-            const pz = Math.pow(zPhase, 1.8); 
-            const screenY = horizonY + (1 - pz) * (V_HEIGHT - horizonY);
-            
+
+            const pz = Math.pow(zPhase, 1.8);
+            const screenY = horizonY + (1 - pz) * (h - horizonY);
+
             const lineAlpha = Math.min(255, Math.floor((1 - pz) * 400)) * alpha;
             ctx.strokeStyle = rgba(r, g, b, lineAlpha);
-            
+
             ctx.beginPath();
             for (let j = 0; j <= linesX; j++) {
-                const x = (j / linesX) * V_WIDTH;
+                const x = (j / linesX) * w;
                 const height = getH(x, zRaw + speed);
-                
-                const nx = (x - V_WIDTH / 2);
-                const scaleX = (1 - pz) * 1.2 + 0.1;
-                const px = V_WIDTH / 2 + nx * scaleX;
+
+                const nx = (x - w / 2);
+                const scaleX = (1 - pz) * 1.5 + 0.05;
+                const px = w / 2 + nx * scaleX;
                 const py = screenY - height * (1 - pz);
-                
+
                 if (j === 0) ctx.moveTo(px, py);
                 else ctx.lineTo(px, py);
             }
@@ -3459,13 +3457,13 @@ class Game {
 
         // Draw vertical lines (X)
         for (let j = 0; j <= linesX; j++) {
-            const x = (j / linesX) * V_WIDTH;
-            
-            const vGrad = ctx.createLinearGradient(0, horizonY, 0, V_HEIGHT);
+            const x = (j / linesX) * w;
+
+            const vGrad = ctx.createLinearGradient(0, horizonY, 0, h);
             vGrad.addColorStop(0, rgba(r, g, b, 0));
             vGrad.addColorStop(1, rgba(r, g, b, 255 * alpha));
             ctx.strokeStyle = vGrad;
-            
+
             ctx.beginPath();
             let first = true;
             for (let i = 0; i <= linesZ; i++) {
@@ -3473,16 +3471,16 @@ class Game {
                 if (zRaw < 0) zRaw = 0;
                 if (zRaw > linesZ) zRaw = linesZ;
 
-                let zPhase = zRaw / linesZ; 
+                let zPhase = zRaw / linesZ;
                 const pz = Math.pow(zPhase, 1.8);
-                const sy = horizonY + (1 - pz) * (V_HEIGHT - horizonY);
-                
+                const sy = horizonY + (1 - pz) * (h - horizonY);
+
                 const height = getH(x, zRaw + speed);
-                const nx = (x - V_WIDTH / 2);
-                const scaleX = (1 - pz) * 1.2 + 0.1;
-                const px = V_WIDTH / 2 + nx * scaleX;
+                const nx = (x - w / 2);
+                const scaleX = (1 - pz) * 1.5 + 0.05;
+                const px = w / 2 + nx * scaleX;
                 const py = sy - height * (1 - pz);
-                
+
                 if (first) { ctx.moveTo(px, py); first = false; }
                 else ctx.lineTo(px, py);
             }
