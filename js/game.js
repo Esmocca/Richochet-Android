@@ -2455,8 +2455,9 @@ class Game {
         const btnX = winX + winW - 6 - btnSize;
         const btnY = winY + 6;
         if (vx >= btnX && vx <= btnX + btnSize && vy >= btnY && vy <= btnY + btnSize) {
+            this.audio.init();
+            this.audio.playBrickSound(0.6);
             this.triggerStateTransition(GameState.Menu);
-            this.audio.init(); this.audio.playHitWallSound();
             return;
         }
 
@@ -3816,9 +3817,18 @@ class Game {
         const diffY = rowStartY + rowStep * 2;
         drawRowBg(2, sel2);
         drawText(ctx, 'DIFFICULTY', labelX, diffY, rowFontSz, normColor);
+        
+        const dBoxW = winW * 0.40;
+        const dBoxH = rowFontSz * 1.5;
+        const dBoxY = diffY - rowFontSz * 0.2;
+        
+        ctx.fillStyle = '#808080'; ctx.fillRect(valueX, dBoxY, dBoxW, dBoxH);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(valueX+1, dBoxY+1, dBoxW-1, dBoxH-1);
+        ctx.fillStyle = '#000000'; ctx.fillRect(valueX, dBoxY, dBoxW-1, 1); ctx.fillRect(valueX, dBoxY, 1, dBoxH-1);
+        
         const diffText = (sel2 ? '< ' : '  ') + this.difficulties[this.difficulty].toUpperCase() + (sel2 ? ' >' : '  ');
-        const diffColors = [rgba(80, 255, 140), rgba(255, 200, 0), rgba(255, 60, 80)];
-        drawText(ctx, diffText, valueX, diffY, rowFontSz, diffColors[this.difficulty]);
+        const diffTextW = textWidth(ctx, diffText, rowFontSz);
+        drawText(ctx, diffText, valueX + (dBoxW - diffTextW)/2, diffY + 4, rowFontSz, '#000000');
 
         // 4. Button Size
         const sel3 = this.optionSelectedIndex === 3;
