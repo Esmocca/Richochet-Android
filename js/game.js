@@ -583,7 +583,7 @@ class Game {
     resetBallAndPaddle(fullReset = false) {
         this.paddleX = PLAY_AREA_WIDTH / 2;
         this.paddleY = 223;
-        this.multiUseCount = 0;
+        this.multiSpawnCount = 0;
 
         // Increase base speed per level
         const levelSpeedBoost = this.currentLevel * 10;
@@ -1562,7 +1562,7 @@ class Game {
             
             // Reset MULTI powerup limit if we're back down to a single ball
             if (this.balls.length <= 1) {
-                this.multiUseCount = 0;
+                this.multiSpawnCount = 0;
             }
 
             // If all balls lost
@@ -1977,10 +1977,13 @@ class Game {
 
     spawnPowerup(x, y) {
         let types = ['WIDE', 'SLOW', 'MULTI'];
-        if ((this.multiUseCount || 0) >= 4) {
+        if ((this.multiSpawnCount || 0) >= 4) {
             types = ['WIDE', 'SLOW'];
         }
         const type = types[Math.floor(Math.random() * types.length)];
+        if (type === 'MULTI') {
+            this.multiSpawnCount = (this.multiSpawnCount || 0) + 1;
+        }
         const colors = { 'WIDE': [0, 255, 100], 'SLOW': [255, 200, 0], 'MULTI': [255, 50, 50] };
 
         this.powerups.push({
@@ -2035,7 +2038,6 @@ class Game {
         } else if (type === 'SLOW') {
             this.powerupActive.slow = 8;
         } else if (type === 'MULTI') {
-            this.multiUseCount = (this.multiUseCount || 0) + 1;
             // Multi-ball: spawn 2 extra balls from each existing ball
             const newBalls = [];
             for (const ball of this.balls) {
@@ -2100,7 +2102,14 @@ class Game {
     // ─── Coin Drops ──────────────────────────────────
 
     triggerSplashDamage(centerBrick, isBall) {
-        const radius = (this.combo >= 10) ? 4 : 2;
+        let radius = 0; // default for projectile: no splash
+
+        if (isBall) {
+            // "menghancurkan 3 blok" -> radius 1 (center + 1 left + 1 right)
+            // "menghancurkan 4 blok" -> radius 1.5
+            radius = (this.combo >= 10) ? 1.5 : 1.0;
+        }
+
         const splashW = centerBrick.w * radius;
         const splashH = centerBrick.h * radius;
 
