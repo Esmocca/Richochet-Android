@@ -2367,6 +2367,8 @@ class Game {
     // ─── Shop System ──────────────────────────────────
 
     handleShopTap(vx, vy) {
+        const w = this.w;
+        const h = this.h;
         if (this.shopConfirmType) {
             // Confirm Buy Overlay active
             const cw = w * 0.5;

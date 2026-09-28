@@ -11,6 +11,8 @@ if start_idx == -1 or end_idx == -1:
     exit(1)
 
 new_code = r"""    handleShopTap(vx, vy) {
+        const w = this.w;
+        const h = this.h;
         if (this.shopConfirmType) {
             // Confirm Buy Overlay active
             const cw = w * 0.5;
