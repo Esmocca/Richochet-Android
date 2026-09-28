@@ -1,16 +1,22 @@
 import json
 from PIL import Image
 
-def img_to_pattern(img_path, target_width=38):
+def img_to_pattern(img_path, target_width=38, max_height=None, thresh=30):
     try:
         img = Image.open(img_path).convert("RGBA")
     except Exception as e:
         print(f"Error loading {img_path}: {e}")
         return []
 
-    # Calculate height to maintain aspect ratio
     w, h = img.size
-    target_height = int(h * (target_width / w))
+    if max_height:
+        # Calculate dimensions so height doesn't exceed max_height
+        target_height = int(h * (target_width / w))
+        if target_height > max_height:
+            target_height = max_height
+            target_width = int(w * (max_height / h))
+    else:
+        target_height = int(h * (target_width / w))
     
     # Resize
     img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
@@ -62,7 +68,7 @@ patterns.append(img_to_pattern(shark_path, target_width=24))
 
 # Stage 5: Jellyfish
 jellyfish_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790577865963.png"
-patterns.append(img_to_pattern(jellyfish_path, target_width=20))
+patterns.append(img_to_pattern(jellyfish_path, target_width=24, max_height=20))
 
 with open("patterns.json", "w") as f:
     json.dump(patterns, f)
