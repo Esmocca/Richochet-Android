@@ -3826,24 +3826,49 @@ class Game {
             ctx.fillStyle = brickGlow;
             ctx.fillRect(-brick.w * 0.6, -brick.h * 0.6, brick.w * 1.2, brick.h * 1.2);
 
-            // Main body
+            // Main body with 3D Gradient
             const r = brick.w / 2;
-            const colorStr = rgba(brick.color[0], brick.color[1], brick.color[2]);
             const isType1 = (brick.type === 1);
+            
+            // Create gel-like gradient (top lighter, bottom darker)
+            const bodyGrad = ctx.createLinearGradient(0, -r, 0, r);
+            const rCol = brick.color[0], gCol = brick.color[1], bCol = brick.color[2];
+            bodyGrad.addColorStop(0, rgba(Math.min(255, rCol + 60), Math.min(255, gCol + 60), Math.min(255, bCol + 60)));
+            bodyGrad.addColorStop(1, rgba(Math.max(0, rCol - 40), Math.max(0, gCol - 40), Math.max(0, bCol - 40)));
+
+            // Drop shadow for 3D depth
+            ctx.shadowColor = rgba(0, 0, 0, 150);
+            ctx.shadowBlur = 5;
+            ctx.shadowOffsetY = 3;
             
             if (isType1) {
                 // Type 1: Circle
                 ctx.beginPath();
                 ctx.arc(0, 0, r, 0, Math.PI * 2);
-                ctx.fillStyle = colorStr;
+                ctx.fillStyle = bodyGrad;
                 ctx.fill();
             } else {
                 // Type 2: Rounded Square
-                fillRoundedRect(ctx, -r, -r, brick.w, brick.h, 3, colorStr);
+                fillRoundedRect(ctx, -r, -r, brick.w, brick.h, 4, bodyGrad);
+            }
+
+            // Remove shadow for inner details
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+
+            // 3D Glass Highlight at the top
+            if (isType1) {
+                ctx.beginPath();
+                ctx.arc(0, -r*0.3, r*0.6, Math.PI, 0); // Top crescent
+                ctx.fillStyle = rgba(255, 255, 255, 50);
+                ctx.fill();
+            } else {
+                fillRoundedRect(ctx, -r*0.7, -r*0.7, brick.w*0.7, brick.h*0.3, 2, rgba(255, 255, 255, 50));
             }
 
             // Inner cross (Soft highlight/shadow for pixel art look)
-            ctx.strokeStyle = isType1 ? rgba(255, 255, 255, 120) : rgba(0, 0, 0, 120);
+            ctx.strokeStyle = isType1 ? rgba(255, 255, 255, 150) : rgba(0, 0, 0, 100);
             ctx.lineWidth = 2.5;
             ctx.lineCap = 'round';
             ctx.beginPath();
