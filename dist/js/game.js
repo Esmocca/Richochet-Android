@@ -144,6 +144,12 @@ class Game {
         this.flankerImg = new Image();
         this.flankerImg.src = 'img/comp_flanker.png';
         
+        this.coinImg = new Image();
+        this.coinImg.src = 'img/icon_coin.png';
+        
+        this.meteoriteImg = new Image();
+        this.meteoriteImg.src = 'img/meteorite.png';
+        
         this.hitEffects = [];
 
         this.audio = new AudioManager();
@@ -2153,20 +2159,25 @@ class Game {
             ctx.fillRect(-coin.size * 2, -coin.size * 2, coin.size * 4, coin.size * 4);
 
             // Coin body
-            ctx.beginPath();
-            ctx.arc(0, 0, coin.size / 2, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(255, 215, 0);
-            ctx.fill();
-            ctx.strokeStyle = rgba(255, 255, 200);
-            ctx.lineWidth = 1;
-            ctx.stroke();
+            if (this.coinImg && this.coinImg.complete) {
+                const drawSize = coin.size * 2.5;
+                ctx.drawImage(this.coinImg, -drawSize/2, -drawSize/2, drawSize, drawSize);
+            } else {
+                ctx.beginPath();
+                ctx.arc(0, 0, coin.size / 2, 0, Math.PI * 2);
+                ctx.fillStyle = rgba(255, 215, 0);
+                ctx.fill();
+                ctx.strokeStyle = rgba(255, 255, 200);
+                ctx.lineWidth = 1;
+                ctx.stroke();
 
-            // Coin inner mark
-            ctx.font = '5px PixelFont, monospace';
-            ctx.fillStyle = rgba(180, 120, 0);
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('C', 0, 0);
+                // Coin inner mark
+                ctx.font = '5px PixelFont, monospace';
+                ctx.fillStyle = rgba(180, 120, 0);
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('C', 0, 0);
+            }
 
             ctx.restore();
         }
@@ -2596,10 +2607,15 @@ class Game {
         drawText(ctx, coinBalText, coinBoxX + 10, winY + 18, coinSize, '#000000');
         
         // Coin icon
-        ctx.beginPath();
-        ctx.arc(coinBoxX + coinBoxW - 20, winY + 12 + coinBoxH/2, h * 0.015, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(255, 215, 0); ctx.fill();
-        ctx.strokeStyle = '#000000'; ctx.lineWidth = 1.5; ctx.stroke();
+        if (this.coinImg && this.coinImg.complete) {
+            const size = h * 0.04;
+            ctx.drawImage(this.coinImg, coinBoxX + coinBoxW - 25, winY + 12 + coinBoxH/2 - size/2, size, size);
+        } else {
+            ctx.beginPath();
+            ctx.arc(coinBoxX + coinBoxW - 20, winY + 12 + coinBoxH/2, h * 0.015, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(255, 215, 0); ctx.fill();
+            ctx.strokeStyle = '#000000'; ctx.lineWidth = 1.5; ctx.stroke();
+        }
 
         // Content Area (White background)
         const contentX = winX + 8;
@@ -3264,7 +3280,7 @@ class Game {
             for (const t of ball.trails) {
                 ctx.beginPath();
                 ctx.arc(t.x, t.y, 2.2, 0, Math.PI * 2);
-                ctx.fillStyle = rgba(0, 220, 255, t.alpha);
+                ctx.fillStyle = rgba(255, 100, 0, t.alpha);
                 ctx.fill();
             }
 
@@ -3273,26 +3289,31 @@ class Game {
                 ball.x + ball.radius, ball.y + ball.radius, 0,
                 ball.x + ball.radius, ball.y + ball.radius, ball.radius * 4
             );
-            ballGrad.addColorStop(0, rgba(0, 255, 255, 120));
-            ballGrad.addColorStop(0.5, rgba(0, 200, 255, 40));
-            ballGrad.addColorStop(1, rgba(0, 255, 255, 0));
+            ballGrad.addColorStop(0, rgba(255, 100, 0, 120));
+            ballGrad.addColorStop(0.5, rgba(255, 50, 0, 40));
+            ballGrad.addColorStop(1, rgba(255, 0, 0, 0));
             ctx.fillStyle = ballGrad;
             ctx.fillRect(ball.x - ball.radius * 3, ball.y - ball.radius * 3, ball.radius * 8, ball.radius * 8);
 
             // Ball body
-            ctx.beginPath();
-            ctx.arc(ball.x + ball.radius, ball.y + ball.radius, ball.radius, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(255, 255, 200);
-            ctx.fill();
-            ctx.strokeStyle = rgba(0, 220, 255, 200);
-            ctx.lineWidth = 1;
-            ctx.stroke();
+            if (this.meteoriteImg && this.meteoriteImg.complete) {
+                const bSize = ball.radius * 4.5;
+                ctx.drawImage(this.meteoriteImg, ball.x + ball.radius - bSize/2, ball.y + ball.radius - bSize/2, bSize, bSize);
+            } else {
+                ctx.beginPath();
+                ctx.arc(ball.x + ball.radius, ball.y + ball.radius, ball.radius, 0, Math.PI * 2);
+                ctx.fillStyle = rgba(255, 255, 200);
+                ctx.fill();
+                ctx.strokeStyle = rgba(255, 100, 0, 200);
+                ctx.lineWidth = 1;
+                ctx.stroke();
 
-            // Ball inner highlight
-            ctx.beginPath();
-            ctx.arc(ball.x + ball.radius - 1, ball.y + ball.radius - 1, ball.radius * 0.4, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(255, 255, 255, 180);
-            ctx.fill();
+                // Ball inner highlight
+                ctx.beginPath();
+                ctx.arc(ball.x + ball.radius - 1, ball.y + ball.radius - 1, ball.radius * 0.4, 0, Math.PI * 2);
+                ctx.fillStyle = rgba(255, 255, 255, 180);
+                ctx.fill();
+            }
         }
 
         // Bricks
