@@ -4052,12 +4052,15 @@ class Game {
 
         // Speedster Indicator below stage text
         if (this.speedsterActive) {
-            const sImgSize = h * 0.06;
-            const iconX = w * 0.97 - stageW / 2 - sImgSize / 2;
-            const iconY = timerY + timerBoxH + 30 + stageSize + 15;
-
             if (this.speedsterImg && this.speedsterImg.complete) {
-                ctx.drawImage(this.speedsterImg, iconX, iconY, sImgSize, sImgSize);
+                const sImgH = h * 0.06;
+                const aspect = this.speedsterImg.naturalWidth / this.speedsterImg.naturalHeight;
+                const sImgW = sImgH * aspect;
+                
+                const iconX = w * 0.97 - stageW / 2 - sImgW / 2;
+                const iconY = timerY + timerBoxH + 30 + stageSize + 15;
+
+                ctx.drawImage(this.speedsterImg, iconX, iconY, sImgW, sImgH);
             }
         }
     }
