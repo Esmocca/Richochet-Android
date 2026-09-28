@@ -2557,7 +2557,7 @@ class Game {
         ctx.fillRect(winX, winY, winW, winH);
         ctx.fillStyle = '#c0c0c0';
         ctx.fillRect(winX + 2, winY + 2, winW - 4, winH - 4);
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#dfdfdf';
         ctx.fillRect(winX + 6, winY + 6, winW - 12, winH - 12);
         
         // Title bar (Deep Blue)
@@ -2584,7 +2584,7 @@ class Game {
         
         ctx.fillStyle = '#000000';
         ctx.fillRect(coinBoxX, winY + 12, coinBoxW, coinBoxH);
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#dfdfdf';
         ctx.fillRect(coinBoxX + 2, winY + 14, coinBoxW - 4, coinBoxH - 4);
         
         drawText(ctx, coinBalText, coinBoxX + 10, winY + 18, coinSize, '#000000');
@@ -2626,7 +2626,7 @@ class Game {
             // Child Window (Card)
             ctx.fillStyle = '#000000';
             ctx.fillRect(cx, cy, cardW, cardH);
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = '#dfdfdf';
             ctx.fillRect(cx + 2, cy + 2, cardW - 4, cardH - 4);
             
             // Child Window Title
@@ -2677,8 +2677,8 @@ class Game {
         drawY += secSize + 16;
         
         const shopItems = [
-            { id: 'revive', name: 'REVIVE', desc: '+1 LIFE', price: 25, icon: '\\u2665', color: [255, 80, 120], available: true },
-            { id: 'speedster', name: 'SPEEDSTER', desc: '+SPEED', price: 50, icon: '\\u00BB', color: [0, 255, 255], available: true },
+            { id: 'revive', name: 'REVIVE', desc: '+1 LIFE', price: 25, icon: '\u2665', color: [255, 80, 120], available: true },
+            { id: 'speedster', name: 'SPEEDSTER', desc: '+SPEED', price: 50, icon: '\u00BB', color: [0, 255, 255], available: true },
             { id: 'soon1', name: 'COMING', desc: 'SOON', price: null, icon: '?', color: [100, 100, 130], available: false },
         ];
         
@@ -2690,7 +2690,7 @@ class Game {
             // Child Window (Card)
             ctx.fillStyle = '#000000';
             ctx.fillRect(ix, iy, cardW, cardH);
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = '#dfdfdf';
             ctx.fillRect(ix + 2, iy + 2, cardW - 4, cardH - 4);
             
             // Child Window Title
@@ -2776,7 +2776,7 @@ class Game {
             
             ctx.fillStyle = '#000000';
             ctx.fillRect(cx, cy, cw, ch);
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = '#dfdfdf';
             ctx.fillRect(cx+2, cy+2, cw-4, ch-4);
             
             ctx.fillStyle = '#0000a8';
@@ -2819,7 +2819,7 @@ class Game {
         
         ctx.fillStyle = '#000000';
         ctx.fillRect(cx, cy, cw, ch);
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#dfdfdf';
         ctx.fillRect(cx+2, cy+2, cw-4, ch-4);
         
         const titleH = h * 0.05;
