@@ -2559,685 +2559,244 @@ class Game {
         this.saveSettings();
     }
 
+
+    // --- Helper for OS style borders ---
+    drawOSRect(ctx, x, y, w, h, inset = false, bg = '#c0c0c0') {
+        ctx.fillStyle = bg;
+        ctx.fillRect(x, y, w, h);
+        
+        ctx.lineWidth = 2;
+        // Top and Left
+        ctx.strokeStyle = inset ? '#808080' : '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(x, y + h); ctx.lineTo(x, y); ctx.lineTo(x + w, y);
+        ctx.stroke();
+        
+        // Bottom and Right
+        ctx.strokeStyle = inset ? '#ffffff' : '#404040';
+        ctx.beginPath();
+        ctx.moveTo(x + w, y); ctx.lineTo(x + w, y + h); ctx.lineTo(x, y + h);
+        ctx.stroke();
+    }
+
     drawShop(ctx, w, h) {
         if (!this.shopScrollY) this.shopScrollY = 0;
 
-        // ── Header bar ──
-        const headerH = h * 0.115;
-        const headerGrad = ctx.createLinearGradient(0, 0, 0, headerH);
-        headerGrad.addColorStop(0, rgba(40, 20, 0, 240));
-        headerGrad.addColorStop(1, rgba(20, 10, 0, 240));
-        ctx.fillStyle = headerGrad;
-        ctx.fillRect(0, 0, w, headerH);
+        // Desktop background
+        ctx.fillStyle = '#008080';
+        ctx.fillRect(0, 0, w, h);
+        
+        const winX = w * 0.02;
+        const winY = h * 0.02;
+        const winW = w * 0.96;
+        const winH = h * 0.96;
+        
+        // Main Window
+        this.drawOSRect(ctx, winX, winY, winW, winH, false, '#c0c0c0');
+        
+        // Title bar
+        const titleH = h * 0.08;
+        ctx.fillStyle = '#0000aa';
+        ctx.fillRect(winX + 4, winY + 4, winW - 8, titleH);
+        
+        drawText(ctx, 'Shop Merchant.exe', winX + 12, winY + 12, h * 0.045, '#ffffff');
+        
+        // Close Button
+        const btnSize = titleH - 8;
+        const btnX = winX + winW - 4 - btnSize - 4;
+        const btnY = winY + 8;
+        this.drawOSRect(ctx, btnX, btnY, btnSize, btnSize, false, '#c0c0c0');
+        drawText(ctx, 'X', btnX + btnSize*0.25, btnY + btnSize*0.1, btnSize*0.7, '#000000');
+        
+        // Back Button (to match hit area ty < h*0.115, tx < w*0.2)
+        const backBtnW = w * 0.15;
+        const backBtnH = titleH - 8;
+        const backBtnX = winX + 12 + textWidth(ctx, 'Shop Merchant.exe', h * 0.045) + 30;
+        const backBtnY = winY + 8;
+        this.drawOSRect(ctx, backBtnX, backBtnY, backBtnW, backBtnH, false, '#c0c0c0');
+        drawText(ctx, '< BACK', backBtnX + backBtnW*0.1, backBtnY + backBtnH*0.15, backBtnH*0.6, '#000000');
 
-        ctx.strokeStyle = rgba(255, 140, 0, 120);
-        ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(0, headerH); ctx.lineTo(w, headerH); ctx.stroke();
-
-        // Title
-        const titleText = 'SHOP MERCHANT';
-        const titleSize = h * 0.055; // Slightly smaller to fit "MERCHANT"
-        const titleW = textWidth(ctx, titleText, titleSize);
-        const bloomPulse = (Math.sin(this.menuAnimTimer * 2.5) + 1) * 0.5;
-        drawText(ctx, titleText, (w - titleW) / 2 + 2, h * 0.025 + 2, titleSize, rgba(180, 80, 0, 60));
-        drawText(ctx, titleText, (w - titleW) / 2, h * 0.025, titleSize,
-            rgba(255, 180 + bloomPulse * 30, 40, 220 + bloomPulse * 35));
-
-        // Coin balance top-right with 3D Frame
-        const coinBalText = `${this.coins}`;
-        const coinBalSize = h * 0.035;
-        const coinBalW = textWidth(ctx, coinBalText, coinBalSize);
-
-        const iconRad = h * 0.015;
-        const padX = 12;
-        const frameW = coinBalW + iconRad * 2 + padX * 3;
-        const frameH = h * 0.055;
-        const frameX = w * 0.97 - frameW;
-        const frameY = (headerH - frameH) / 2;
-
-        // Drop shadow for coin frame
-        fillRoundedRect(ctx, frameX + 3, frameY + 4, frameW, frameH, frameH / 2, rgba(0, 0, 0, 130));
-
-        // 3D Background for coin frame
-        const frameGrad = ctx.createLinearGradient(0, frameY, 0, frameY + frameH);
-        frameGrad.addColorStop(0, rgba(50, 45, 30, 220));
-        frameGrad.addColorStop(1, rgba(25, 20, 10, 220));
-        fillRoundedRect(ctx, frameX, frameY, frameW, frameH, frameH / 2, frameGrad);
-        drawRoundedRect(ctx, frameX, frameY, frameW, frameH, frameH / 2);
-
-        ctx.strokeStyle = rgba(255, 180, 50, 180);
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // Draw coin icon vertically aligned inside frame
-        const cX = frameX + padX + iconRad;
-        const cY = frameY + frameH / 2;
+        // Coin balance (Sunken text box)
+        const coinBalText = `Coins: ${this.coins}  `;
+        const coinSize = h * 0.04;
+        const coinW = textWidth(ctx, coinBalText, coinSize);
+        const coinBoxW = coinW + 40;
+        const coinBoxH = h * 0.06;
+        const coinBoxX = btnX - coinBoxW - 20;
+        this.drawOSRect(ctx, coinBoxX, winY + 10, coinBoxW, coinBoxH, true, '#ffffff');
+        drawText(ctx, coinBalText, coinBoxX + 10, winY + 16, coinSize, '#000000');
+        
+        // Coin icon
         ctx.beginPath();
-        ctx.arc(cX, cY, iconRad, 0, Math.PI * 2);
+        ctx.arc(coinBoxX + coinBoxW - 20, winY + 10 + coinBoxH/2, h * 0.015, 0, Math.PI * 2);
         ctx.fillStyle = rgba(255, 215, 0); ctx.fill();
-        ctx.strokeStyle = rgba(255, 255, 255, 180); ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.strokeStyle = rgba(0, 0, 0, 180); ctx.lineWidth = 1.5; ctx.stroke();
 
-        // Draw coin text
-        drawText(ctx, coinBalText, cX + iconRad + padX - 4, frameY + (frameH - coinBalSize) / 2, coinBalSize, rgba(255, 210, 0, 255));
-
-        // ── Scrollable content area ──
-        const contentY = headerH + 4;
-        const contentH = h - headerH - 4; // Use full height minus header
-
+        // Content Area (Sunken)
+        const contentX = winX + 10;
+        const contentY = winY + titleH + 10;
+        const contentW = winW - 20;
+        const contentH = winH - titleH - 20;
+        
+        this.drawOSRect(ctx, contentX, contentY, contentW, contentH, true, '#ffffff');
+        
+        // --- Scroll Area ---
         ctx.save();
         ctx.beginPath();
-        ctx.rect(0, contentY, w, contentH);
+        ctx.rect(contentX + 2, contentY + 2, contentW - 4, contentH - 4);
         ctx.clip();
-
+        
         const scrollOffset = this.shopScrollY || 0;
-        let drawY = contentY + 8 - scrollOffset;
-
-        // ── Section: COMPANION ──
-        const secLabelSize = h * 0.028;
-        drawText(ctx, '  COMPANION', w * 0.02, drawY + 2, secLabelSize, rgba(255, 180, 60, 220));
-        ctx.strokeStyle = rgba(255, 140, 0, 60);
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(w * 0.02, drawY + secLabelSize + 4);
-        ctx.lineTo(w * 0.98, drawY + secLabelSize + 4);
-        ctx.stroke();
-        drawY += secLabelSize + 12;
-
-        // Companion cards row
-        const cardW = w * 0.27;
+        let drawY = contentY + 10 - scrollOffset;
+        
+        const secSize = h * 0.04;
+        drawText(ctx, 'COMPANION:', contentX + 16, drawY, secSize, '#000080');
+        drawY += secSize + 16;
+        
+        const cardW = w * 0.28;
         const cardH = h * 0.38;
-        const cardGap = (w - this.companions.length * cardW) / (this.companions.length + 1);
-        const compRowStartY = drawY;
-
+        const cardGap = (contentW - this.companions.length * cardW) / (this.companions.length + 1);
+        
         for (let i = 0; i < this.companions.length; i++) {
             const comp = this.companions[i];
-            const cx = cardGap + i * (cardW + cardGap);
+            const cx = contentX + cardGap + i * (cardW + cardGap);
             const cy = drawY;
             const selected = this.shopSelectedIndex === i;
-
-            // Card background
-            const bgA = selected ? 55 : 22;
-            fillRoundedRect(ctx, cx, cy, cardW, cardH, 8,
-                rgba(comp.color[0], comp.color[1], comp.color[2], bgA));
-
-            // Border
-            const bA = selected ? 220 + Math.sin(this.menuAnimTimer * 5) * 35 : 55;
-            drawRoundedRect(ctx, cx, cy, cardW, cardH, 8);
-            ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], bA);
-            ctx.lineWidth = selected ? 2.5 : 1;
-            ctx.stroke();
-
-            // Outer glow if selected
-            if (selected) {
-                drawRoundedRect(ctx, cx - 3, cy - 3, cardW + 6, cardH + 6, 10);
-                ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2],
-                    30 + Math.sin(this.menuAnimTimer * 4) * 15);
-                ctx.lineWidth = 4;
-                ctx.stroke();
-            }
-
-            // Top glass shine
-            const shine = ctx.createLinearGradient(cx, cy, cx, cy + cardH * 0.35);
-            shine.addColorStop(0, rgba(255, 255, 255, selected ? 20 : 8));
-            shine.addColorStop(1, rgba(255, 255, 255, 0));
-            fillRoundedRect(ctx, cx + 1, cy + 1, cardW - 2, cardH * 0.35, 7, shine);
-
-            // Icon
-            const iconX = cx + cardW / 2;
-            const iconY = cy + cardH * 0.24;
-            const iSz = Math.min(cardW, cardH) * 0.28;
-            const iPulse = selected ? 1 + Math.sin(this.menuAnimTimer * 3) * 0.12 : 1;
-
-            ctx.save();
-            ctx.translate(iconX, iconY);
-            ctx.scale(iPulse, iPulse);
-
-            // Diamond icon
-            ctx.beginPath();
-            ctx.moveTo(0, -iSz); ctx.lineTo(iSz * 0.7, 0);
-            ctx.lineTo(0, iSz); ctx.lineTo(-iSz * 0.7, 0);
-            ctx.closePath();
-            ctx.fillStyle = rgba(comp.color[0], comp.color[1], comp.color[2]);
-            ctx.fill();
-            ctx.strokeStyle = rgba(255, 255, 255, 180);
-            ctx.lineWidth = 1.2; ctx.stroke();
-
-            // Inner shine
-            ctx.beginPath();
-            ctx.moveTo(0, -iSz * 0.5); ctx.lineTo(iSz * 0.3, 0);
-            ctx.lineTo(0, iSz * 0.5); ctx.lineTo(-iSz * 0.3, 0);
-            ctx.closePath();
-            ctx.fillStyle = rgba(255, 255, 255, 70); ctx.fill();
-
-            // Projectile indicator
-            ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], 200);
-            ctx.lineWidth = 1.8;
-            if (comp.type === 'linear') {
-                ctx.beginPath(); ctx.moveTo(0, -iSz - 4); ctx.lineTo(0, -iSz - 16); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(-3, -iSz - 13); ctx.lineTo(0, -iSz - 18); ctx.lineTo(3, -iSz - 13); ctx.stroke();
-            } else if (comp.type === 'zigzag') {
-                ctx.beginPath();
-                ctx.moveTo(0, -iSz - 2); ctx.lineTo(-5, -iSz - 8);
-                ctx.lineTo(5, -iSz - 14); ctx.lineTo(0, -iSz - 20);
-                ctx.stroke();
-            } else if (comp.type === 'side') {
-                ctx.beginPath(); ctx.moveTo(-3, -iSz - 4); ctx.lineTo(-10, -iSz - 16); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(-4, -iSz - 14); ctx.lineTo(-12, -iSz - 18); ctx.lineTo(-8, -iSz - 11); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(3, -iSz - 4); ctx.lineTo(10, -iSz - 16); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(4, -iSz - 14); ctx.lineTo(12, -iSz - 18); ctx.lineTo(8, -iSz - 11); ctx.stroke();
-            }
-            ctx.restore();
-
+            
+            this.drawOSRect(ctx, cx, cy, cardW, cardH, selected, selected ? '#e0e0e0' : '#c0c0c0');
+            
             // Name
-            const nameSize = h * 0.028;
-            const nameW = textWidth(ctx, comp.name, nameSize);
-            drawText(ctx, comp.name, cx + (cardW - nameW) / 2, cy + cardH * 0.52,
-                nameSize, rgba(255, 255, 255, selected ? 255 : 180));
-
-            // Description
-            const cDescSize = h * 0.020;
-            const cDescW = textWidth(ctx, comp.desc, cDescSize);
-            drawText(ctx, comp.desc, cx + (cardW - cDescW) / 2, cy + cardH * 0.65,
-                cDescSize, rgba(180, 200, 220, selected ? 220 : 140));
-
+            const nSize = h * 0.028;
+            const nW = textWidth(ctx, comp.name, nSize);
+            drawText(ctx, comp.name, cx + (cardW - nW)/2, cy + 12, nSize, selected ? '#000080' : '#000000');
+            
+            // Diamond Icon
+            const iSz = cardH * 0.2;
+            ctx.save();
+            ctx.translate(cx + cardW/2, cy + cardH * 0.38);
+            ctx.beginPath();
+            ctx.moveTo(0, -iSz); ctx.lineTo(iSz*0.7, 0); ctx.lineTo(0, iSz); ctx.lineTo(-iSz*0.7, 0);
+            ctx.fillStyle = `rgb(${comp.color[0]}, ${comp.color[1]}, ${comp.color[2]})`;
+            ctx.fill();
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.restore();
+            
+            // Desc
+            const dSize = h * 0.022;
+            const dW = textWidth(ctx, comp.desc, dSize);
+            drawText(ctx, comp.desc, cx + (cardW - dW)/2, cy + cardH * 0.62, dSize, '#404040');
+            
             // Status/Price
-            const statusY = cy + cardH * 0.82; // Moved down to make room for desc
             if (comp.owned) {
-                const sLabel = comp.equipped ? 'EQUIPPED' : 'OWNED';
-                const sColor = comp.equipped ? rgba(80, 255, 180) : rgba(150, 200, 255);
-                const sSize = h * 0.022;
-                const sW = textWidth(ctx, sLabel, sSize);
-                drawText(ctx, sLabel, cx + (cardW - sW) / 2, statusY, sSize, sColor);
+                const s = comp.equipped ? 'EQUIPPED' : 'OWNED';
+                const sW = textWidth(ctx, s, dSize);
+                drawText(ctx, s, cx + (cardW - sW)/2, cy + cardH * 0.78, dSize, comp.equipped ? '#008000' : '#000080');
             } else {
-                const priceText = `${comp.price}`;
-                const priceSize = h * 0.026;
-                const priceW = textWidth(ctx, priceText, priceSize);
-                const canAfford = this.coins >= comp.price;
-                const px = cx + (cardW - priceW) / 2 + h * 0.015;
-
-                ctx.beginPath();
-                ctx.arc(px - h * 0.018, statusY - priceSize * 0.30, h * 0.015, 0, Math.PI * 2);
-                ctx.fillStyle = rgba(255, 215, 0); ctx.fill();
-                ctx.strokeStyle = rgba(255, 255, 255, 150); ctx.lineWidth = 1; ctx.stroke();
-
-                drawText(ctx, priceText, px, statusY, priceSize,
-                    canAfford ? rgba(255, 210, 0) : rgba(255, 70, 70));
-            }
-
-            // Action button below card (selected only)
-            if (selected) {
-                const btnY = cy + cardH + 6;
-                const btnH = h * 0.055;
-                let btnText, btnColor;
-                if (!comp.owned) {
-                    btnText = this.coins >= comp.price ? 'BUY' : 'NOT ENOUGH';
-                    btnColor = this.coins >= comp.price ? [80, 255, 180] : [255, 70, 70];
-                } else {
-                    btnText = comp.equipped ? 'UNEQUIP' : 'EQUIP';
-                    btnColor = comp.equipped ? [255, 200, 50] : [80, 200, 255];
-                }
-                fillRoundedRect(ctx, cx, btnY, cardW, btnH, 4,
-                    rgba(btnColor[0], btnColor[1], btnColor[2], 40));
-                drawRoundedRect(ctx, cx, btnY, cardW, btnH, 4);
-                ctx.strokeStyle = rgba(btnColor[0], btnColor[1], btnColor[2], 200);
-                ctx.lineWidth = 1.8; ctx.stroke();
-                const bfSize = h * 0.026;
-                const bfW = textWidth(ctx, btnText, bfSize);
-                drawText(ctx, btnText, cx + (cardW - bfW) / 2, btnY + (btnH - bfSize) / 2, bfSize, rgba(255, 255, 255));
+                const p = `$${comp.price}`;
+                const pW = textWidth(ctx, p, dSize);
+                drawText(ctx, p, cx + (cardW - pW)/2, cy + cardH * 0.78, dSize, '#800000');
             }
         }
-
-        // Move drawY past companion row + button
-        drawY += cardH + (this.shopSelectedIndex >= 0 ? h * 0.055 + 6 : 0) + 24;
-
-        // ── Section: ITEMS ──
-        drawText(ctx, '  ITEMS', w * 0.02, drawY + 2, secLabelSize, rgba(255, 180, 60, 220));
-        ctx.strokeStyle = rgba(255, 140, 0, 60);
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(w * 0.02, drawY + secLabelSize + 4);
-        ctx.lineTo(w * 0.98, drawY + secLabelSize + 4);
-        ctx.stroke();
-        drawY += secLabelSize + 12;
-
-        // Items grid (2 columns)
-        const itemCardW = w * 0.27;
-        const itemCardH = h * 0.35;
-        const itemGap = (w - 3 * itemCardW) / 4;
-
+        
+        drawY += cardH + 30;
+        
+        drawText(ctx, 'ITEMS:', contentX + 16, drawY, secSize, '#000080');
+        drawY += secSize + 16;
+        
         const shopItems = [
             { id: 'revive', name: 'REVIVE', desc: '+1 Life', price: 25, icon: '\u2665', color: [255, 80, 120], available: true },
-            { id: 'speedster', name: 'SPEEDSTER', desc: '+Speed', price: 50, icon: '»', color: [0, 255, 255], available: true },
+            { id: 'speedster', name: 'SPEEDSTER', desc: '+Speed', price: 50, icon: '\u00BB', color: [0, 255, 255], available: true },
             { id: 'soon1', name: 'COMING', desc: 'SOON', price: null, icon: '?', color: [100, 100, 130], available: false },
         ];
-
+        
         for (let i = 0; i < shopItems.length; i++) {
             const item = shopItems[i];
-            const col = i % 3;
-            const row = Math.floor(i / 3);
-            const ix = itemGap + col * (itemCardW + itemGap);
-            const iy = drawY + row * (itemCardH + 10);
-
-            const iAvail = item.available;
-
-            // Drop shadow
-            fillRoundedRect(ctx, ix + 3, iy + 4, itemCardW, itemCardH, 7, rgba(0, 0, 0, 130));
-
-            // 3D Background
-            const bgGrad = ctx.createLinearGradient(0, iy, 0, iy + itemCardH);
-            if (iAvail) {
-                bgGrad.addColorStop(0, rgba(item.color[0], item.color[1], item.color[2], 50));
-                bgGrad.addColorStop(1, rgba(item.color[0], item.color[1], item.color[2], 15));
-            } else {
-                bgGrad.addColorStop(0, rgba(item.color[0], item.color[1], item.color[2], 20));
-                bgGrad.addColorStop(1, rgba(item.color[0], item.color[1], item.color[2], 5));
-            }
-            fillRoundedRect(ctx, ix, iy, itemCardW, itemCardH, 7, bgGrad);
-            drawRoundedRect(ctx, ix, iy, itemCardW, itemCardH, 7);
-            ctx.strokeStyle = rgba(item.color[0], item.color[1], item.color[2], iAvail ? 120 : 40);
-            ctx.lineWidth = 1.5; ctx.stroke();
-
-            // Top shine
-            const shine = ctx.createLinearGradient(ix, iy, ix, iy + itemCardH * 0.35);
-            shine.addColorStop(0, rgba(255, 255, 255, iAvail ? 30 : 10));
-            shine.addColorStop(1, rgba(255, 255, 255, 0));
-            fillRoundedRect(ctx, ix + 1, iy + 1, itemCardW - 2, itemCardH * 0.35, 6, shine);
-
-            // Icon
-            if (item.id === 'speedster') {
-                const iconColor = rgba(item.color[0], item.color[1], item.color[2], iAvail ? 220 : 80);
-                this.drawPaddleSpeedIcon(ctx, ix + itemCardW / 2, iy + itemCardH * 0.3, h * 0.08, iconColor, false);
-            } else {
-                const iconFontSize = h * 0.060;
-                const iconW = textWidth(ctx, item.icon, iconFontSize);
-                drawText(ctx, item.icon, ix + (itemCardW - iconW) / 2, iy + itemCardH * 0.22,
-                    iconFontSize, rgba(item.color[0], item.color[1], item.color[2], iAvail ? 220 : 80));
-            }
-
+            const ix = contentX + cardGap + i * (cardW + cardGap);
+            const iy = drawY;
+            
+            this.drawOSRect(ctx, ix, iy, cardW, cardH, false, '#c0c0c0');
+            
             // Name
-            const iNameSize = h * 0.024;
-            const iNameW = textWidth(ctx, item.name, iNameSize);
-            drawText(ctx, item.name, ix + (itemCardW - iNameW) / 2, iy + itemCardH * 0.57,
-                iNameSize, rgba(255, 255, 255, iAvail ? 200 : 90));
-
-            // Desc / Price
-            if (iAvail && item.price != null) {
-                const descText = item.desc;
-                const descSize = h * 0.020;
-                const descW = textWidth(ctx, descText, descSize);
-                drawText(ctx, descText, ix + (itemCardW - descW) / 2, iy + itemCardH * 0.70,
-                    descSize, rgba(180, 200, 220, 160));
-
-                let isBoughtOut = false;
-                if (item.id === 'speedster' && this.speedsterActive) isBoughtOut = true;
-
-                if (isBoughtOut) {
-                    const activeText = 'ACTIVE';
-                    const actSize = h * 0.024;
-                    const actW = textWidth(ctx, activeText, actSize);
-                    drawText(ctx, activeText, ix + (itemCardW - actW) / 2, iy + itemCardH * 0.88, actSize, rgba(item.color[0], item.color[1], item.color[2], 255));
-                } else {
-                    const iPriceText = `${item.price}`;
-                    const iPriceSize = h * 0.022;
-                    const iPriceW = textWidth(ctx, iPriceText, iPriceSize);
-                    const px = ix + (itemCardW - iPriceW) / 2 + h * 0.015;
-
-                    ctx.beginPath();
-                    ctx.arc(px - h * 0.018, iy + itemCardH * 0.88 - iPriceSize * 0.30, h * 0.015, 0, Math.PI * 2);
-                    ctx.fillStyle = rgba(255, 215, 0); ctx.fill();
-                    ctx.strokeStyle = rgba(255, 255, 255, 150); ctx.lineWidth = 1; ctx.stroke();
-
-                    drawText(ctx, iPriceText, px, iy + itemCardH * 0.88,
-                        iPriceSize, this.coins >= item.price ? rgba(255, 210, 0) : rgba(255, 70, 70));
-                }
-            } else {
-                const descSize = h * 0.020;
-                const descW = textWidth(ctx, item.desc, descSize);
-                drawText(ctx, item.desc, ix + (itemCardW - descW) / 2, iy + itemCardH * 0.75,
-                    descSize, rgba(item.color[0], item.color[1], item.color[2], 80));
+            const nSize = h * 0.028;
+            const nW = textWidth(ctx, item.name, nSize);
+            drawText(ctx, item.name, ix + (cardW - nW)/2, iy + 12, nSize, item.available ? '#000000' : '#808080');
+            
+            // Icon
+            const iSize = h * 0.07;
+            const iW = textWidth(ctx, item.icon, iSize);
+            drawText(ctx, item.icon, ix + (cardW - iW)/2, iy + cardH * 0.3, iSize, `rgb(${item.color.join(',')})`);
+            
+            // Desc
+            const dSize = h * 0.022;
+            const dW = textWidth(ctx, item.desc, dSize);
+            drawText(ctx, item.desc, ix + (cardW - dW)/2, iy + cardH * 0.62, dSize, '#404040');
+            
+            // Price
+            if (item.available && item.price != null) {
+                const p = `$${item.price}`;
+                const pW = textWidth(ctx, p, dSize);
+                drawText(ctx, p, ix + (cardW - pW)/2, iy + cardH * 0.78, dSize, '#800000');
             }
         }
-
-        // Save total content height for scroll clamping
-        this.shopContentH = (drawY + scrollOffset) - contentY + itemCardH + 20;
-
+        
+        drawY += cardH + 20;
+        this.shopContentH = drawY + scrollOffset - contentY;
+        
         ctx.restore(); // end clip
-
-        // ── Scroll indicator (right edge) ──
-        const totalContent = itemCardH + drawY + 20 - contentY;
-        if (totalContent > contentH) {
-            const trackX = w - 6;
-            const trackH = contentH;
-            const thumbH = Math.max(30, (contentH / totalContent) * trackH);
-            const thumbY = contentY + (scrollOffset / (totalContent - contentH)) * (trackH - thumbH);
-            ctx.fillStyle = rgba(255, 140, 0, 25);
-            ctx.fillRect(trackX - 2, contentY, 4, trackH);
-            ctx.fillStyle = rgba(255, 140, 0, 140);
-            fillRoundedRect(ctx, trackX - 2, thumbY, 4, thumbH, 2, rgba(255, 140, 0, 180));
+        
+        // Scrollbar Track
+        const sbW = 24;
+        const sbX = contentX + contentW - sbW - 2;
+        const sbY = contentY + 2;
+        const sbH = contentH - 4;
+        this.drawOSRect(ctx, sbX, sbY, sbW, sbH, true, '#dfdfdf');
+        
+        // Scroll thumb
+        if (this.shopContentH > contentH) {
+            const thumbH = Math.max(30, (contentH / this.shopContentH) * sbH);
+            const thumbY = sbY + (scrollOffset / (this.shopContentH - contentH)) * (sbH - thumbH);
+            this.drawOSRect(ctx, sbX + 2, thumbY, sbW - 4, thumbH, false, '#c0c0c0');
         }
-
-        // ── Back button ──
-        const backBtnW = w * 0.15;
-        const backBtnH = h * 0.065;
-        const backBtnX = w * 0.02;
-        const backBtnY = (headerH - backBtnH) / 2;
-
-        fillRoundedRect(ctx, backBtnX, backBtnY, backBtnW, backBtnH, 5, rgba(255, 120, 0, 20));
-        drawRoundedRect(ctx, backBtnX, backBtnY, backBtnW, backBtnH, 5);
-        ctx.strokeStyle = rgba(255, 140, 0, 100);
-        ctx.lineWidth = 1.5; ctx.stroke();
-
-        const backText = '< BACK';
-        const backFontSize = h * 0.028;
-        const backW2 = textWidth(ctx, backText, backFontSize);
-        drawText(ctx, backText, backBtnX + (backBtnW - backW2) / 2, backBtnY + (backBtnH - backFontSize) / 2,
-            backFontSize, rgba(220, 170, 60));
-
-        // Cello assistant overlay
+        
+        // Cello Helper (ASCII style)
         if (this.shopCelloVisible) {
             this.drawCelloAssistant(ctx, w, h);
         }
-
+        
         // Confirm Buy Overlay
         if (this.shopConfirmType) {
-            ctx.fillStyle = rgba(0, 5, 15, 180);
-            ctx.fillRect(0, 0, w, h);
-
-            const cw = w * 0.6;
-            const ch = h * 0.35;
-            const cx = (w - cw) / 2;
-            const cy = (h - ch) / 2;
-
-            fillRoundedRect(ctx, cx, cy, cw, ch, 8, rgba(20, 30, 45, 240));
-            drawRoundedRect(ctx, cx, cy, cw, ch, 8);
-            ctx.strokeStyle = rgba(255, 150, 50, 200);
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            const cTitle = 'CONFIRM BUY?';
-            const cTSize = h * 0.04;
-            const cTW = textWidth(ctx, cTitle, cTSize);
-            drawText(ctx, cTitle, cx + (cw - cTW) / 2, cy + h * 0.04, cTSize, rgba(255, 200, 100));
-
-            const btnW = cw * 0.4;
-            const btnH = h * 0.08;
-            const btnY = cy + ch - btnH - h * 0.04;
-
-            const btnCancelX = cx + cw * 0.05;
-            fillRoundedRect(ctx, btnCancelX, btnY, btnW, btnH, 4, rgba(100, 50, 50, 200));
-            drawRoundedRect(ctx, btnCancelX, btnY, btnW, btnH, 4);
-            ctx.strokeStyle = rgba(255, 100, 100); ctx.lineWidth = 1.5; ctx.stroke();
-            const lCancel = 'CANCEL';
-            const lCSize = h * 0.025;
-            const lCW = textWidth(ctx, lCancel, lCSize);
-            drawText(ctx, lCancel, btnCancelX + (btnW - lCW) / 2, btnY + (btnH - lCSize) / 2, lCSize, rgba(255, 180, 180));
-
-            const btnBuyX = cx + cw * 0.95 - btnW;
-            fillRoundedRect(ctx, btnBuyX, btnY, btnW, btnH, 4, rgba(50, 100, 50, 200));
-            drawRoundedRect(ctx, btnBuyX, btnY, btnW, btnH, 4);
-            ctx.strokeStyle = rgba(100, 255, 100); ctx.lineWidth = 1.5; ctx.stroke();
-            const lBuy = 'BUY';
-            const lBSize = h * 0.025;
-            const lBW = textWidth(ctx, lBuy, lBSize);
-            drawText(ctx, lBuy, btnBuyX + (btnW - lBW) / 2, btnY + (btnH - lBSize) / 2, lBSize, rgba(180, 255, 180));
-        }
-    }
-
-    drawCelloAssistant(ctx, w, h) {
-
-
-        const titlePulse = (Math.sin(this.menuAnimTimer * 3) + 1) * 0.5;
-        drawText(ctx, titleText, (w - titleW) / 2 + 2, h * 0.06 + 2, titleSize, rgba(255, 200, 0, 60));
-        drawText(ctx, titleText, (w - titleW) / 2, h * 0.06, titleSize, rgba(255, 220, 0, 200 + titlePulse * 55));
-
-        // Coin balance
-        const balText = `COINS: ${this.coins}`;
-        const balSize = h * 0.028;
-        const balW = textWidth(ctx, balText, balSize);
-        drawText(ctx, balText, (w - balW) / 2, h * 0.14, balSize, rgba(255, 215, 0));
-
-        // Companion cards
-        const cardW = w * 0.22;
-        const cardH = h * 0.45;
-        const cardSpacing = w * 0.025;
-        const totalCardsW = this.companions.length * cardW + (this.companions.length - 1) * cardSpacing;
-        const startX = (w - totalCardsW) / 2;
-        const cardY = h * 0.22;
-
-        for (let i = 0; i < this.companions.length; i++) {
-            const comp = this.companions[i];
-            const cx = startX + i * (cardW + cardSpacing);
-            const selected = this.shopSelectedIndex === i;
-
-            // Card glass panel
-            const bgAlpha = selected ? 50 : 25;
-            fillRoundedRect(ctx, cx, cardY, cardW, cardH, 6,
-                rgba(comp.color[0], comp.color[1], comp.color[2], bgAlpha));
-
-            // Border
-            const borderAlpha = selected ? 220 : 60;
-            const pulseAlpha = selected ? borderAlpha + Math.sin(this.menuAnimTimer * 5) * 40 : borderAlpha;
-            drawRoundedRect(ctx, cx, cardY, cardW, cardH, 6);
-            ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], pulseAlpha);
-            ctx.lineWidth = selected ? 2.5 : 1;
-            ctx.stroke();
-
-            if (selected) {
-                drawRoundedRect(ctx, cx - 3, cardY - 3, cardW + 6, cardH + 6, 8);
-                ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], 40 + Math.sin(this.menuAnimTimer * 4) * 20);
-                ctx.lineWidth = 3;
-                ctx.stroke();
-            }
-
-            // Scanlines
-            ctx.save();
-            drawRoundedRect(ctx, cx, cardY, cardW, cardH, 6);
-            ctx.clip();
-            const scanOffset = (this.menuAnimTimer * 25) % 6;
-            ctx.strokeStyle = rgba(255, 255, 255, 6);
-            ctx.lineWidth = 0.5;
-            for (let sy = scanOffset; sy < cardH; sy += 3) {
-                ctx.beginPath();
-                ctx.moveTo(cx, cardY + sy);
-                ctx.lineTo(cx + cardW, cardY + sy);
-                ctx.stroke();
-            }
-            ctx.restore();
-
-            // Top highlight
-            const hlGrad = ctx.createLinearGradient(cx, cardY, cx, cardY + cardH * 0.3);
-            hlGrad.addColorStop(0, rgba(255, 255, 255, selected ? 25 : 10));
-            hlGrad.addColorStop(1, rgba(255, 255, 255, 0));
-            fillRoundedRect(ctx, cx + 1, cardY + 1, cardW - 2, cardH * 0.3, 5, hlGrad);
-
-            // Companion icon
-            const iconCenterX = cx + cardW / 2;
-            const iconCenterY = cardY + cardH * 0.22;
-            const iconSize = h * 0.09;
-
-            const iconGlow = ctx.createRadialGradient(iconCenterX, iconCenterY, 0, iconCenterX, iconCenterY, iconSize);
-            iconGlow.addColorStop(0, rgba(comp.color[0], comp.color[1], comp.color[2], 80));
-            iconGlow.addColorStop(1, rgba(comp.color[0], comp.color[1], comp.color[2], 0));
-            ctx.fillStyle = iconGlow;
-            ctx.fillRect(iconCenterX - iconSize, iconCenterY - iconSize, iconSize * 2, iconSize * 2);
-
-            ctx.save();
-            ctx.translate(iconCenterX, iconCenterY);
-            const iconPulse = selected ? (Math.sin(this.menuAnimTimer * 3) * 0.15 + 1) : 1;
-            ctx.scale(iconPulse, iconPulse);
-
-            const dSize = iconSize * 0.5;
-            ctx.beginPath();
-            ctx.moveTo(0, -dSize);
-            ctx.lineTo(dSize * 0.7, 0);
-            ctx.lineTo(0, dSize);
-            ctx.lineTo(-dSize * 0.7, 0);
-            ctx.closePath();
-            ctx.fillStyle = rgba(comp.color[0], comp.color[1], comp.color[2]);
-            ctx.fill();
-            ctx.strokeStyle = rgba(255, 255, 255, 200);
-            ctx.lineWidth = 1.2;
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.moveTo(0, -dSize * 0.5);
-            ctx.lineTo(dSize * 0.3, 0);
-            ctx.lineTo(0, dSize * 0.5);
-            ctx.lineTo(-dSize * 0.3, 0);
-            ctx.closePath();
-            ctx.fillStyle = rgba(255, 255, 255, 80);
-            ctx.fill();
-
-            // Projectile type indicator
-            if (comp.type === 'linear') {
-                ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], 180);
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(0, -dSize - 5);
-                ctx.lineTo(0, -dSize - 15);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(-3, -dSize - 12);
-                ctx.lineTo(0, -dSize - 17);
-                ctx.lineTo(3, -dSize - 12);
-                ctx.stroke();
-            } else if (comp.type === 'zigzag') {
-                ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], 180);
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(0, -dSize - 3);
-                ctx.lineTo(-5, -dSize - 8);
-                ctx.lineTo(5, -dSize - 13);
-                ctx.lineTo(0, -dSize - 18);
-                ctx.stroke();
-            } else if (comp.type === 'side') {
-                ctx.strokeStyle = rgba(comp.color[0], comp.color[1], comp.color[2], 180);
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(-dSize * 0.7 - 3, 0);
-                ctx.lineTo(-dSize * 0.7 - 13, 0);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(-dSize * 0.7 - 10, -3);
-                ctx.lineTo(-dSize * 0.7 - 15, 0);
-                ctx.lineTo(-dSize * 0.7 - 10, 3);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(dSize * 0.7 + 3, 0);
-                ctx.lineTo(dSize * 0.7 + 13, 0);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(dSize * 0.7 + 10, -3);
-                ctx.lineTo(dSize * 0.7 + 15, 0);
-                ctx.lineTo(dSize * 0.7 + 10, 3);
-                ctx.stroke();
-            }
-
-            ctx.restore();
-
-            // Name
-            const nameSize = h * 0.032;
-            const nameW = textWidth(ctx, comp.name, nameSize);
-            drawText(ctx, comp.name, cx + (cardW - nameW) / 2, cardY + cardH * 0.48, nameSize,
-                rgba(255, 255, 255, selected ? 255 : 180));
-
-            // Description
-            const descSize = h * 0.019;
-            const descW = textWidth(ctx, comp.desc, descSize);
-            drawText(ctx, comp.desc, cx + (cardW - descW) / 2, cardY + cardH * 0.58, descSize,
-                rgba(180, 200, 220, selected ? 220 : 140));
-
-            // Status / Price
-            const statusY = cardY + cardH * 0.72;
-            if (comp.owned) {
-                if (comp.equipped) {
-                    const eqText = 'EQUIPPED';
-                    const eqSize = h * 0.024;
-                    const eqW = textWidth(ctx, eqText, eqSize);
-                    drawText(ctx, eqText, cx + (cardW - eqW) / 2, statusY, eqSize, rgba(0, 255, 180));
-                } else {
-                    const ownText = 'OWNED';
-                    const ownSize = h * 0.024;
-                    const ownW = textWidth(ctx, ownText, ownSize);
-                    drawText(ctx, ownText, cx + (cardW - ownW) / 2, statusY, ownSize, rgba(150, 200, 255));
-                }
-            } else {
-                const priceText = `${comp.price} COINS`;
-                const priceSize = h * 0.028;
-                const priceW = textWidth(ctx, priceText, priceSize);
-                const canAfford = this.coins >= comp.price;
-                drawText(ctx, priceText, cx + (cardW - priceW) / 2, statusY, priceSize,
-                    canAfford ? rgba(255, 215, 0) : rgba(255, 60, 60));
-            }
-
-            // Action button (selected card only)
-            if (selected) {
-                const btnY = cardY + cardH + h * 0.03;
-                const btnH2 = h * 0.065;
-                let btnText, btnColor;
-
-                if (!comp.owned) {
-                    btnText = this.coins >= comp.price ? 'BUY' : 'NOT ENOUGH';
-                    btnColor = this.coins >= comp.price ? [0, 255, 180] : [255, 60, 60];
-                } else {
-                    btnText = comp.equipped ? 'UNEQUIP' : 'EQUIP';
-                    btnColor = comp.equipped ? [255, 200, 0] : [0, 200, 255];
-                }
-
-                fillRoundedRect(ctx, cx, btnY, cardW, btnH2, 4,
-                    rgba(btnColor[0], btnColor[1], btnColor[2], 40));
-                drawRoundedRect(ctx, cx, btnY, cardW, btnH2, 4);
-                ctx.strokeStyle = rgba(btnColor[0], btnColor[1], btnColor[2], 200);
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                const btnFontSize = h * 0.028;
-                const btnTextW = textWidth(ctx, btnText, btnFontSize);
-                drawText(ctx, btnText, cx + (cardW - btnTextW) / 2, btnY + (btnH2 - btnFontSize) / 2, btnFontSize,
-                    rgba(255, 255, 255));
-            }
-        }
-
-        // Back button
-        const backBtnW = w * 0.18;
-        const backBtnH = h * 0.06;
-        const backBtnX = (w - backBtnW) / 2;
-        const backBtnY = h * 0.88;
-
-        fillRoundedRect(ctx, backBtnX, backBtnY, backBtnW, backBtnH, 4,
-            rgba(0, 180, 255, 20));
-        drawRoundedRect(ctx, backBtnX, backBtnY, backBtnW, backBtnH, 4);
-        ctx.strokeStyle = rgba(0, 180, 255, 120);
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        const backText = 'BACK';
-        const backFontSize = h * 0.030;
-        const backW2 = textWidth(ctx, backText, backFontSize);
-        drawText(ctx, backText, (w - backW2) / 2, backBtnY + (backBtnH - backFontSize) / 2, backFontSize,
-            rgba(200, 200, 200));
-
-        // Help text
-        const helpText = '[ Tap card / Arrows + Enter ]';
-        const helpSize = h * 0.020;
-        const helpW = textWidth(ctx, helpText, helpSize);
-        drawText(ctx, helpText, (w - helpW) / 2, h * 0.95, helpSize, rgba(140, 140, 140));
-
-        // Cello assistant overlay
-        if (this.shopCelloVisible) {
-            this.drawCelloAssistant(ctx, w, h);
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(0,0,w,h);
+            
+            const cw = w * 0.5;
+            const ch = h * 0.4;
+            const cx = (w - cw)/2;
+            const cy = (h - ch)/2;
+            
+            this.drawOSRect(ctx, cx, cy, cw, ch, false, '#c0c0c0');
+            ctx.fillStyle = '#000080';
+            ctx.fillRect(cx + 4, cy + 4, cw - 8, titleH);
+            drawText(ctx, 'Confirm.exe', cx + 12, cy + 12, h * 0.045, '#ffffff');
+            
+            const q = 'Do you want to purchase this?';
+            const qS = h * 0.035;
+            const qW = textWidth(ctx, q, qS);
+            drawText(ctx, q, cx + (cw - qW)/2, cy + ch*0.4, qS, '#000000');
+            
+            // Buttons
+            const cBtnW = cw * 0.3;
+            const cBtnH = h * 0.08;
+            // CANCEL (Left)
+            this.drawOSRect(ctx, cx + cw*0.15, cy + ch*0.65, cBtnW, cBtnH, false, '#c0c0c0');
+            drawText(ctx, 'CANCEL', cx + cw*0.15 + cBtnW*0.15, cy + ch*0.65 + cBtnH*0.2, h*0.035, '#000000');
+            // BUY (Right)
+            this.drawOSRect(ctx, cx + cw*0.55, cy + ch*0.65, cBtnW, cBtnH, false, '#c0c0c0');
+            drawText(ctx, 'BUY', cx + cw*0.55 + cBtnW*0.3, cy + ch*0.65 + cBtnH*0.2, h*0.035, '#000000');
         }
     }
 
     drawCelloAssistant(ctx, w, h) {
         const isHelp = this.shopAssistantStep >= 4;
-
-        if (!isHelp) {
-            // Semi-transparent overlay only during tutorial
-            ctx.fillStyle = rgba(0, 0, 0, 160);
-            ctx.fillRect(0, 0, w, h);
-        }
-
         const dialogs = [
             'Hi there! I am Cello, your shop assistant!\nWelcome to the Companion Shop!',
             'Here you can buy Companions that will\nhelp you destroy blocks with projectiles!',
@@ -3245,178 +2804,54 @@ class Game {
             'Collect coins from breaking blocks\nto buy them. Let us go shopping!',
             'Any help?'
         ];
-
         const step = Math.min(this.shopAssistantStep, dialogs.length - 1);
-        const dialog = dialogs[step];
+        const msg = dialogs[step];
 
-        // Cello character
-        const celloX = isHelp ? w * 0.88 : w * 0.75;
-        const celloY = isHelp ? h * 0.82 : h * 0.35;
-
-        ctx.save();
-        ctx.translate(celloX, celloY);
-
-        const bobY = Math.sin(this.shopCelloAnimTimer * 3) * 5;
-        ctx.translate(0, bobY);
-
-        // Shadow
-        ctx.beginPath();
-        ctx.ellipse(0, 45, 25, 5, 0, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(0, 0, 0, 60);
-        ctx.fill();
-
-        // Body
-        fillRoundedRect(ctx, -20, -10, 40, 50, 8, rgba(60, 200, 255));
-        drawRoundedRect(ctx, -20, -10, 40, 50, 8);
-        ctx.strokeStyle = rgba(100, 230, 255, 200);
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Face screen
-        fillRoundedRect(ctx, -15, -5, 30, 25, 4, rgba(10, 20, 40));
-
-        // Expressions
-        const isSleeping = this.shopIdleTimer > 5.0; // 5 seconds idle
-        const blinkPhase = this.shopCelloAnimTimer % 4;
-        const isBlinking = blinkPhase > 3.7 && blinkPhase < 3.9;
-
-        if (isSleeping) {
-            // Sleeping expression (closed eyes zZz)
-            ctx.strokeStyle = rgba(0, 255, 200);
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(-9, 7); ctx.lineTo(-6, 9); ctx.lineTo(-3, 7);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(3, 7); ctx.lineTo(6, 9); ctx.lineTo(9, 7);
-            ctx.stroke();
-
-            // Zzz text floating
-            const zBob = Math.sin(this.shopCelloAnimTimer * 2) * 5;
-            drawText(ctx, 'Z', 10, -20 + zBob, h * 0.015, rgba(0, 255, 200, 200));
-            drawText(ctx, 'z', 18, -25 + zBob, h * 0.010, rgba(0, 255, 200, 150));
-        } else if (isBlinking) {
-            ctx.fillStyle = rgba(0, 255, 200);
-            ctx.fillRect(-9, 6, 6, 2);
-            ctx.fillRect(3, 6, 6, 2);
-        } else {
-            const cycle = this.shopCelloAnimTimer % 6;
-            let lookX = 0;
-            let lookY = 0;
-            if (cycle < 1) { // Look Up
-                lookY = -1.5;
-            } else if (cycle > 3 && cycle < 4) { // Look Down
-                lookY = 1.5;
-            } else if (cycle > 4.5 && cycle < 5) { // Smile/Happy
-                ctx.strokeStyle = rgba(0, 255, 200);
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(-9, 8); ctx.lineTo(-6, 6); ctx.lineTo(-3, 8);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(3, 8); ctx.lineTo(6, 6); ctx.lineTo(9, 8);
-                ctx.stroke();
-                lookX = null; // Skip drawing normal eyes
-            }
-
-            if (lookX !== null) {
-                // Happy/Normal eyes without pupils
-                ctx.beginPath();
-                ctx.arc(-6 + lookX, 7 + lookY, 3, 0, Math.PI * 2);
-                ctx.fillStyle = rgba(0, 255, 200);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(6 + lookX, 7 + lookY, 3, 0, Math.PI * 2);
-                ctx.fill();
-            }
+        const cw = w * 0.45;
+        const ch = h * 0.35;
+        const cx = w * 0.5;
+        const cy = h * 0.6;
+        
+        this.drawOSRect(ctx, cx, cy, cw, ch, false, '#c0c0c0');
+        const titleH = h * 0.06;
+        ctx.fillStyle = '#000080';
+        ctx.fillRect(cx + 4, cy + 4, cw - 8, titleH);
+        drawText(ctx, 'Webby_Helper.txt', cx + 10, cy + 8, h * 0.035, '#ffffff');
+        
+        ctx.fillStyle = '#ffffff';
+        const textH = ch - titleH - 12;
+        ctx.fillRect(cx + 6, cy + titleH + 6, cw - 12, textH);
+        this.drawOSRect(ctx, cx + 6, cy + titleH + 6, cw - 12, textH, true, 'transparent');
+        
+        // ASCII Dolphin
+        const ascii = [
+            "    ,     ,",
+            "   / \\\\---/ \\\\",
+            "  (  o   o  )",
+            "   \\\\  ___  /",
+            "    `-----` "
+        ];
+        
+        ctx.fillStyle = '#000000';
+        ctx.font = `bold ${h * 0.022}px monospace`;
+        let ay = cy + titleH + 30;
+        for (const line of ascii) {
+            ctx.fillText(line, cx + 20, ay);
+            ay += h * 0.025;
         }
-
-        // Mouth (Smile)
-        if (isSleeping) {
-            ctx.beginPath();
-            ctx.arc(0, 15, 3, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(0, 255, 200, 150);
-            ctx.fill();
-        } else {
-            ctx.beginPath();
-            ctx.arc(0, 12, 5, 0.1 * Math.PI, 0.9 * Math.PI);
-            ctx.strokeStyle = rgba(0, 255, 200);
-            ctx.lineWidth = 1.2;
-            ctx.stroke();
+        
+        ctx.font = `bold ${h * 0.022}px sans-serif`;
+        // Draw dialog
+        const lines = msg.split('\n');
+        let ty = cy + titleH + 40;
+        for(let li = 0; li < lines.length; li++) {
+            ctx.fillText(lines[li], cx + 150, ty);
+            ty += h * 0.03;
         }
-
-        // Name tag
-        const nameTag = 'CELLO';
-        const nameSize = h * 0.018;
-        const nameTagW = textWidth(ctx, nameTag, nameSize);
-        drawText(ctx, nameTag, -nameTagW / 2, 30, nameSize, rgba(255, 255, 255, 200));
-
-        ctx.restore();
-
-        // Speech bubble
-        const bubbleW = isHelp ? w * 0.16 : w * 0.45;
-        const bubbleH = isHelp ? h * 0.10 : h * 0.32;
-        const bubbleX = isHelp ? celloX - bubbleW - w * 0.02 : celloX - bubbleW - w * 0.05;
-        const bubbleY = isHelp ? celloY - h * 0.06 : h * 0.25;
-
-        const bubbleAlpha = isHelp ? 245 : 200;
-
-        fillRoundedRect(ctx, bubbleX, bubbleY, bubbleW, bubbleH, 10, rgba(15, 20, 35, bubbleAlpha));
-        drawRoundedRect(ctx, bubbleX, bubbleY, bubbleW, bubbleH, 10);
-        ctx.strokeStyle = rgba(0, 200, 255, 160);
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Bubble tail (pointing right towards Cello)
-        ctx.beginPath();
-        ctx.moveTo(bubbleX + bubbleW, bubbleY + bubbleH * 0.4);
-        ctx.lineTo(bubbleX + bubbleW + 15, bubbleY + bubbleH * 0.5);
-        ctx.lineTo(bubbleX + bubbleW, bubbleY + bubbleH * 0.6);
-        ctx.fillStyle = rgba(15, 20, 35, bubbleAlpha);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(bubbleX + bubbleW, bubbleY + bubbleH * 0.4);
-        ctx.lineTo(bubbleX + bubbleW + 15, bubbleY + bubbleH * 0.5);
-        ctx.lineTo(bubbleX + bubbleW, bubbleY + bubbleH * 0.6);
-        ctx.strokeStyle = rgba(0, 200, 255, 160);
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Clear the overlapping border line
-        ctx.beginPath();
-        ctx.moveTo(bubbleX + bubbleW, bubbleY + bubbleH * 0.4 - 1);
-        ctx.lineTo(bubbleX + bubbleW, bubbleY + bubbleH * 0.6 + 1);
-        ctx.strokeStyle = rgba(15, 20, 35, bubbleAlpha);
-        ctx.lineWidth = 4;
-        ctx.stroke();
-        ctx.stroke();
-
-        // Dialog text
-        const lines = dialog.split('\n');
-        const dialogSize = isHelp ? h * 0.025 : h * 0.030;
-        const lineHeight = dialogSize * 1.6;
-        const textStartY = isHelp ? bubbleY + (bubbleH - dialogSize) / 2 : bubbleY + bubbleH * 0.25;
-
-        for (let li = 0; li < lines.length; li++) {
-            const lineW = textWidth(ctx, lines[li], dialogSize);
-            drawText(ctx, lines[li], bubbleX + (bubbleW - lineW) / 2, textStartY + li * lineHeight, dialogSize,
-                rgba(220, 240, 255, isHelp ? 180 : 255));
-        }
-
+        
         if (!isHelp) {
-            // Step indicator
-            const stepText = `${step + 1}/${dialogs.length - 1}`;
-            const stepSize = h * 0.020;
-            const stepW = textWidth(ctx, stepText, stepSize);
-            drawText(ctx, stepText, bubbleX + bubbleW - stepW - 12, bubbleY + bubbleH - h * 0.04, stepSize,
-                rgba(100, 140, 180));
-
-            // Continue prompt
             const contText = '[ Tap to continue ]';
-            const contSize = h * 0.022;
-            const contW = textWidth(ctx, contText, contSize);
-            const contPulse = (Math.sin(this.menuAnimTimer * 4) + 1) * 0.5;
-            drawText(ctx, contText, (w - contW) / 2, h * 0.72, contSize, rgba(255, 255, 255, 120 + contPulse * 130));
+            ctx.fillText(contText, cx + 150, ty + h * 0.05);
         }
     }
 
