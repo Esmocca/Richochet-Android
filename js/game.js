@@ -3297,7 +3297,7 @@ class Game {
 
             // Ball body
             if (this.meteoriteImg && this.meteoriteImg.complete) {
-                const bSize = ball.radius * 2.0;
+                const bSize = ball.radius * 2.8;
                 ctx.drawImage(this.meteoriteImg, ball.x + ball.radius - bSize/2, ball.y + ball.radius - bSize/2, bSize, bSize);
             } else {
                 ctx.beginPath();
