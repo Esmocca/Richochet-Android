@@ -66,9 +66,9 @@ patterns.append(img_to_pattern(fishes_path, target_width=22, max_height=18))
 shark_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790577713177.png"
 patterns.append(img_to_pattern(shark_path, target_width=24, max_height=18))
 
-# Stage 5: Jellyfish
-jellyfish_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790577865963.png"
-patterns.append(img_to_pattern(jellyfish_path, target_width=24, max_height=18))
+# Stage 5: Skull
+skull_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790609211181.png"
+patterns.append(img_to_pattern(skull_path, target_width=24, max_height=18))
 
 with open("patterns.json", "w") as f:
     json.dump(patterns, f)
