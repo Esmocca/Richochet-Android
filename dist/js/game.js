@@ -499,7 +499,7 @@ class Game {
         const rows = pattern.length;
         const cols = pattern[0].length;
 
-        const bw = 12, bh = 12, sx = 2, sy = 2;
+        const bw = 16, bh = 16, sx = 0, sy = 0;
         const totalW = cols * (bw + sx) - sx;
         const startX = (PLAY_AREA_WIDTH - totalW) / 2;
         const startY = 20;
@@ -516,6 +516,7 @@ class Game {
                         targetY: startY + row * (bh + sy) + bh / 2,
                         w: bw, h: bh,
                         color: colors[cIdx] || colors[0],
+                        type: cell,
                         points: cell === 1 ? 150 : 100,
                         destroyed: false,
                         scale: 1,
@@ -3825,22 +3826,42 @@ class Game {
             ctx.fillStyle = brickGlow;
             ctx.fillRect(-brick.w * 0.6, -brick.h * 0.6, brick.w * 1.2, brick.h * 1.2);
 
-            // Pixelated dot body (Circle)
+            // Main body
             const r = brick.w / 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(brick.color[0], brick.color[1], brick.color[2]);
-            ctx.fill();
+            const colorStr = rgba(brick.color[0], brick.color[1], brick.color[2]);
+            const isType1 = (brick.type === 1);
+            
+            if (isType1) {
+                // Type 1: Circle
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+                ctx.fillStyle = colorStr;
+                ctx.fill();
+            } else {
+                // Type 2: Rounded Square
+                fillRoundedRect(ctx, -r, -r, brick.w, brick.h, 3, colorStr);
+            }
 
-            // Inner cross (X pattern for pixel art look)
-            ctx.strokeStyle = rgba(0, 0, 0, 150); // Darker cross
-            ctx.lineWidth = 1.5;
+            // Inner cross (Soft highlight/shadow for pixel art look)
+            ctx.strokeStyle = isType1 ? rgba(255, 255, 255, 120) : rgba(0, 0, 0, 120);
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
             ctx.beginPath();
+            
             const offset = r * 0.45;
-            ctx.moveTo(-offset, -offset);
-            ctx.lineTo(offset, offset);
-            ctx.moveTo(offset, -offset);
-            ctx.lineTo(-offset, offset);
+            if (isType1) {
+                // 'X' pattern
+                ctx.moveTo(-offset, -offset);
+                ctx.lineTo(offset, offset);
+                ctx.moveTo(offset, -offset);
+                ctx.lineTo(-offset, offset);
+            } else {
+                // '+' pattern
+                ctx.moveTo(-offset, 0);
+                ctx.lineTo(offset, 0);
+                ctx.moveTo(0, -offset);
+                ctx.lineTo(0, offset);
+            }
             ctx.stroke();
 
             ctx.restore();
