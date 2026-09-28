@@ -3948,23 +3948,10 @@ class Game {
         const pauseX = w * 0.03;
         const pauseW = iconSize * 1.5;
 
-        // Pause button drop shadow
-        fillRoundedRect(ctx, pauseX + 3, uiY + 4, pauseW, iconSize, 12, rgba(0, 0, 0, 130));
-
-        // Pause button 3D background
-        const pauseGrad = ctx.createLinearGradient(0, uiY, 0, uiY + iconSize);
-        pauseGrad.addColorStop(0, rgba(50, 55, 65, 220));
-        pauseGrad.addColorStop(1, rgba(20, 25, 30, 220));
-        fillRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 12, pauseGrad);
-        drawRoundedRect(ctx, pauseX, uiY, pauseW, iconSize, 12);
-        ctx.strokeStyle = rgba(131, 137, 145, 255);
-        ctx.lineWidth = 5;
-        ctx.stroke();
-
-        // Pause bars
-        ctx.fillStyle = rgba(131, 137, 145, 255);
-        ctx.fillRect(pauseX + pauseW * 0.35, uiY + iconSize * 0.28, pauseW * 0.12, iconSize * 0.44);
-        ctx.fillRect(pauseX + pauseW * 0.53, uiY + iconSize * 0.28, pauseW * 0.12, iconSize * 0.44);
+        // Pause bars (Thick " | | ")
+        ctx.fillStyle = rgba(220, 220, 220, 255);
+        ctx.fillRect(pauseX + pauseW * 0.25, uiY + iconSize * 0.2, pauseW * 0.18, iconSize * 0.6);
+        ctx.fillRect(pauseX + pauseW * 0.57, uiY + iconSize * 0.2, pauseW * 0.18, iconSize * 0.6);
 
         // Lives Bar
         const livesX = pauseX + pauseW + 10;
@@ -4057,47 +4044,21 @@ class Game {
         
         drawText(ctx, timerText, timerX + timerPadX, timerY + (timerBoxH - timerSize) / 2, timerSize, rgba(230, 230, 230, 255));
 
-        // ── Below Top-right: ARCOSTER & STAGE ──
-        const titleText = 'ARCØSTER';
-        const titleSize = h * 0.05;
-        const titleW = textWidth(ctx, titleText, titleSize);
-        drawText(ctx, titleText, w * 0.97 - titleW, timerY + timerBoxH + 25, titleSize, rgba(0, 180, 255, 220));
-
+        // ── Below Top-right: STAGE ──
         const stageText = `STAGE ${this.currentLevel + 1}`;
         const stageSize = h * 0.035;
         const stageW = textWidth(ctx, stageText, stageSize);
-        drawText(ctx, stageText, w * 0.97 - stageW, timerY + timerBoxH + 25 + titleSize + 4, stageSize, rgba(200, 220, 255, 200));
+        drawText(ctx, stageText, w * 0.97 - stageW, timerY + timerBoxH + 30, stageSize, rgba(200, 220, 255, 200));
 
         // Speedster Indicator below stage text
         if (this.speedsterActive) {
-            const iconX = w * 0.97 - stageW / 2;
-            const iconY = timerY + timerBoxH + 25 + titleSize + 4 + stageSize + 30;
+            const sImgSize = h * 0.06;
+            const iconX = w * 0.97 - stageW / 2 - sImgSize / 2;
+            const iconY = timerY + timerBoxH + 30 + stageSize + 15;
 
-            // Frame lingkaran (Circle frame)
-            const rad = h * 0.035; // Smaller radius to make the icon pop out
-
-            // Circle drop shadow
-            ctx.beginPath();
-            ctx.arc(iconX + 2, iconY + 3, rad, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(0, 0, 0, 130);
-            ctx.fill();
-
-            // Circle 3D background gradient
-            const circleGrad = ctx.createLinearGradient(0, iconY - rad, 0, iconY + rad);
-            circleGrad.addColorStop(0, rgba(40, 45, 55, 220));
-            circleGrad.addColorStop(1, rgba(15, 20, 25, 220));
-            ctx.beginPath();
-            ctx.arc(iconX, iconY, rad, 0, Math.PI * 2);
-            ctx.fillStyle = circleGrad;
-            ctx.fill();
-
-            // Circle border (bulky gray like nav/pause buttons)
-            ctx.strokeStyle = rgba(131, 137, 145, 255);
-            ctx.lineWidth = 5;
-            ctx.stroke();
-
-            // Draw the bulky icon
-            this.drawPaddleSpeedIcon(ctx, iconX, iconY, h * 0.055, rgba(170, 175, 180, 255), true);
+            if (this.speedsterImg && this.speedsterImg.complete) {
+                ctx.drawImage(this.speedsterImg, iconX, iconY, sImgSize, sImgSize);
+            }
         }
     }
 
