@@ -25,7 +25,8 @@ def img_to_pattern(img_path, target_width=38):
         for x in range(target_width):
             r, g, b, a = pixels[x, y]
             # Ignore transparent or very dark pixels (background)
-            if a < 50 or (r < 20 and g < 20 and b < 20):
+            brightness = (r + g + b) / 3
+            if a < 50 or brightness < 40:
                 row.append(0)
             else:
                 hex_color = f"#{r:02x}{g:02x}{b:02x}"
