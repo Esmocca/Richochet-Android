@@ -135,6 +135,15 @@ class Game {
         this.celloImg = new Image();
         this.celloImg.src = 'img/icon_cello.png';
         
+        this.blitzImg = new Image();
+        this.blitzImg.src = 'img/comp_blitz.png';
+        
+        this.zappyImg = new Image();
+        this.zappyImg.src = 'img/comp_zappy.png';
+        
+        this.flankerImg = new Image();
+        this.flankerImg.src = 'img/comp_flanker.png';
+        
         this.hitEffects = [];
 
         this.audio = new AudioManager();
@@ -2304,39 +2313,26 @@ class Game {
         if (!comp) return;
 
         const cx = this.paddleX;
-        const cy = this.paddleY - 14;
-        const pulse = Math.sin(this.menuAnimTimer * 4) * 0.2 + 1;
+        const cy = this.paddleY - 20;
+        const pulse = Math.sin(this.menuAnimTimer * 4) * 0.2 + 1.2;
 
         ctx.save();
         ctx.translate(cx, cy);
         ctx.scale(pulse, pulse);
 
-        const glowGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 10);
-        glowGrad.addColorStop(0, rgba(comp.color[0], comp.color[1], comp.color[2], 60));
-        glowGrad.addColorStop(1, rgba(comp.color[0], comp.color[1], comp.color[2], 0));
-        ctx.fillStyle = glowGrad;
-        ctx.fillRect(-10, -10, 20, 20);
+        let imgToDraw = null;
+        if (comp.id === 'comp1' && this.blitzImg && this.blitzImg.complete) imgToDraw = this.blitzImg;
+        else if (comp.id === 'comp2' && this.zappyImg && this.zappyImg.complete) imgToDraw = this.zappyImg;
+        else if (comp.id === 'comp3' && this.flankerImg && this.flankerImg.complete) imgToDraw = this.flankerImg;
 
-        ctx.beginPath();
-        ctx.moveTo(0, -5);
-        ctx.lineTo(4, 0);
-        ctx.lineTo(0, 5);
-        ctx.lineTo(-4, 0);
-        ctx.closePath();
-        ctx.fillStyle = rgba(comp.color[0], comp.color[1], comp.color[2]);
-        ctx.fill();
-        ctx.strokeStyle = rgba(255, 255, 255, 200);
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(0, -3);
-        ctx.lineTo(2, 0);
-        ctx.lineTo(0, 3);
-        ctx.lineTo(-2, 0);
-        ctx.closePath();
-        ctx.fillStyle = rgba(255, 255, 255, 120);
-        ctx.fill();
+        if (imgToDraw) {
+            ctx.drawImage(imgToDraw, -14, -14, 28, 28);
+        } else {
+            ctx.beginPath();
+            ctx.moveTo(0, -5); ctx.lineTo(4, 0); ctx.lineTo(0, 5); ctx.lineTo(-4, 0); ctx.closePath();
+            ctx.fillStyle = rgba(comp.color[0], comp.color[1], comp.color[2]);
+            ctx.fill();
+        }
 
         ctx.restore();
     }
@@ -2647,16 +2643,27 @@ class Game {
             const nW = textWidth(ctx, comp.name.toUpperCase(), nSize);
             drawText(ctx, comp.name.toUpperCase(), cx + (cardW - nW)/2, cy + 8, nSize, '#ffffff');
             
-            // Diamond Icon
-            const iSz = cardH * 0.15;
-            ctx.save();
-            ctx.translate(cx + cardW/2, cy + cTitleH + cardH * 0.25);
-            ctx.beginPath();
-            ctx.moveTo(0, -iSz); ctx.lineTo(iSz*0.7, 0); ctx.lineTo(0, iSz); ctx.lineTo(-iSz*0.7, 0);
-            ctx.fillStyle = `rgb(${comp.color[0]}, ${comp.color[1]}, ${comp.color[2]})`;
-            ctx.fill();
-            ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.stroke();
-            ctx.restore();
+            // Icon
+            let imgToDraw = null;
+            if (comp.id === 'comp1' && this.blitzImg && this.blitzImg.complete) imgToDraw = this.blitzImg;
+            else if (comp.id === 'comp2' && this.zappyImg && this.zappyImg.complete) imgToDraw = this.zappyImg;
+            else if (comp.id === 'comp3' && this.flankerImg && this.flankerImg.complete) imgToDraw = this.flankerImg;
+            
+            if (imgToDraw) {
+                const imgW = cardW * 0.25;
+                const imgH = imgW * (imgToDraw.height / imgToDraw.width);
+                ctx.drawImage(imgToDraw, cx + (cardW - imgW)/2, cy + cTitleH + cardH * 0.1, imgW, imgH);
+            } else {
+                const iSz = cardH * 0.15;
+                ctx.save();
+                ctx.translate(cx + cardW/2, cy + cTitleH + cardH * 0.25);
+                ctx.beginPath();
+                ctx.moveTo(0, -iSz); ctx.lineTo(iSz*0.7, 0); ctx.lineTo(0, iSz); ctx.lineTo(-iSz*0.7, 0);
+                ctx.fillStyle = `rgb(${comp.color[0]}, ${comp.color[1]}, ${comp.color[2]})`;
+                ctx.fill();
+                ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.restore();
+            }
             
             // Desc
             const dSize = h * 0.022;
@@ -2714,13 +2721,13 @@ class Game {
             // Icon
             const iSize = h * 0.07;
             if (i === 0 && this.reviveImg && this.reviveImg.complete) {
-                const imgW = cardW * 0.4;
+                const imgW = cardW * 0.25;
                 const imgH = imgW * (this.reviveImg.height / this.reviveImg.width);
-                ctx.drawImage(this.reviveImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.05, imgW, imgH);
+                ctx.drawImage(this.reviveImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.08, imgW, imgH);
             } else if (i === 1 && this.speedsterImg && this.speedsterImg.complete) {
-                const imgW = cardW * 0.4;
+                const imgW = cardW * 0.25;
                 const imgH = imgW * (this.speedsterImg.height / this.speedsterImg.width);
-                ctx.drawImage(this.speedsterImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.05, imgW, imgH);
+                ctx.drawImage(this.speedsterImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.08, imgW, imgH);
             } else {
                 const iW = textWidth(ctx, item.icon, iSize);
                 drawText(ctx, item.icon, ix + (cardW - iW)/2, iy + cTitleH + cardH * 0.15, iSize, `rgb(${item.color.join(',')})`);
