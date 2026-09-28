@@ -3625,6 +3625,29 @@ class Game {
         ctx.fillRect(winX + 2, winY + 2, winW - 4, titleH);
         drawText(ctx, 'PAUSE.EXE', winX + 10, winY + 12, titleH * 0.6, '#ffffff');
 
+        // Dummy window controls
+        const dBtnSize = titleH - 8;
+        const dBtnY = winY + 6;
+        
+        // Close (X)
+        const closeX = winX + winW - 6 - dBtnSize;
+        this.drawWin3Button(ctx, closeX, dBtnY, dBtnSize, dBtnSize);
+        drawText(ctx, 'X', closeX + dBtnSize*0.25, dBtnY + dBtnSize*0.1, dBtnSize*0.7, '#000000');
+        
+        // Maximize (Square)
+        const maxX = closeX - dBtnSize - 4;
+        this.drawWin3Button(ctx, maxX, dBtnY, dBtnSize, dBtnSize);
+        ctx.strokeStyle = '#000000'; ctx.lineWidth = 1.5;
+        ctx.strokeRect(maxX + dBtnSize*0.2, dBtnY + dBtnSize*0.2, dBtnSize*0.6, dBtnSize*0.6);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(maxX + dBtnSize*0.2, dBtnY + dBtnSize*0.2, dBtnSize*0.6, dBtnSize*0.2); 
+
+        // Minimize (_)
+        const minX = maxX - dBtnSize - 2;
+        this.drawWin3Button(ctx, minX, dBtnY, dBtnSize, dBtnSize);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(minX + dBtnSize*0.2, dBtnY + dBtnSize*0.7, dBtnSize*0.6, dBtnSize*0.15);
+
         // Menu items
         const items = ['RESUME', 'RESTART', 'EXIT'];
         const btnW = winW * 0.70;
