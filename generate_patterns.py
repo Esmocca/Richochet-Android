@@ -30,9 +30,9 @@ def img_to_pattern(img_path, target_width=38, max_height=None, thresh=30):
         row = []
         for x in range(target_width):
             r, g, b, a = pixels[x, y]
-            # Ignore transparent or very dark pixels (background)
+            # Ignore transparent or very dark pixels (black background) or very bright pixels (white background)
             brightness = (r + g + b) / 3
-            if a < 50 or brightness < 40:
+            if a < 50 or brightness < 40 or brightness > 240:
                 row.append(0)
             else:
                 hex_color = f"#{r:02x}{g:02x}{b:02x}"
@@ -50,17 +50,17 @@ def img_to_pattern(img_path, target_width=38, max_height=None, thresh=30):
 
 patterns = []
 
-# Stage 1: Lily
-lily_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790573726237.png"
-patterns.append(img_to_pattern(lily_path, target_width=20, max_height=18))
-
-# Stage 2: Butterfly
-butterfly_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790603535612.png"
+# Stage 1: Butterfly (Red)
+butterfly_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790608361215.png"
 patterns.append(img_to_pattern(butterfly_path, target_width=22, max_height=18))
 
-# Stage 3: Bat
-bat_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790577452817.png"
-patterns.append(img_to_pattern(bat_path, target_width=24, max_height=18))
+# Stage 2: Octopus
+octopus_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790608405047.png"
+patterns.append(img_to_pattern(octopus_path, target_width=22, max_height=18))
+
+# Stage 3: Fishes
+fishes_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790608699649.png"
+patterns.append(img_to_pattern(fishes_path, target_width=22, max_height=18))
 
 # Stage 4: Shark
 shark_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790577713177.png"
