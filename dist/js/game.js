@@ -975,6 +975,7 @@ class Game {
     }
 
     handlePauseTap(vx, vy) {
+        if (this.resumeCountdown > 0) return;
         const w = this.w, h = this.h;
         const panelW = w * 0.38;
         const btnW = panelW * 0.82;
@@ -989,7 +990,7 @@ class Game {
                 this.audio.init(); this.audio.playPauseSound();
                 if (i === 0) {
                     // Resume
-                    this.state = GameState.Playing;
+                    this.resumeCountdown = 3.0;
                 } else if (i === 1) {
                     // Restart
                     this.lives = 3 + (this.extraLives || 0);
@@ -1262,9 +1263,10 @@ class Game {
                 this.pauseSelectedIndex = 0;
             }
         } else if (this.state === GameState.Paused) {
+            if (this.resumeCountdown > 0) return;
             if (code === 'Escape') {
                 this.audio.init(); this.audio.playPauseSound();
-                this.state = GameState.Playing;
+                this.resumeCountdown = 3.0;
             }
             if (code === 'ArrowUp') {
                 this.pauseSelectedIndex = (this.pauseSelectedIndex - 1 + 3) % 3;
@@ -1277,7 +1279,7 @@ class Game {
             if (code === 'Enter' || code === 'Space') {
                 this.audio.init(); this.audio.playPauseSound();
                 if (this.pauseSelectedIndex === 0) {
-                    this.state = GameState.Playing;
+                    this.resumeCountdown = 3.0;
                 } else if (this.pauseSelectedIndex === 1) {
                     this.resetBallAndPaddle(true);
                     this.initBricks();
@@ -1349,9 +1351,19 @@ class Game {
         this.updateRain(dt);
         this.updateParticles(dt);
         this.updatePowerups(dt);
-        this.updateStars(dt);
-        if (this.state === GameState.Playing || this.state === GameState.Paused || this.state === GameState.StageClear || this.state === GameState.GameOver) {
+        if (this.state !== GameState.Paused) {
+            this.updateStars(dt);
+        }
+        if (this.state === GameState.Playing || this.state === GameState.StageClear || this.state === GameState.GameOver) {
             this.updatePlanets(dt);
+        }
+        
+        if (this.state === GameState.Paused && this.resumeCountdown > 0) {
+            this.resumeCountdown -= dt;
+            if (this.resumeCountdown <= 0) {
+                this.state = GameState.Playing;
+                this.resumeCountdown = 0;
+            }
         }
         this.updateFloatingTexts(dt);
         this.updateConfetti(dt);
@@ -4034,6 +4046,19 @@ class Game {
     // ─── Pause Menu ──────────────────────────────────
 
     drawPauseMenu(ctx, w, h) {
+        if (this.resumeCountdown > 0) {
+            ctx.fillStyle = rgba(0, 0, 0, 150);
+            ctx.fillRect(0, 0, w, h);
+            
+            ctx.font = '60px PixelFont, monospace';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const count = Math.ceil(this.resumeCountdown);
+            ctx.fillText(count.toString(), w / 2, h / 2);
+            return;
+        }
+
         // Dim background
         ctx.fillStyle = rgba(4, 6, 14, 195);
         ctx.fillRect(0, 0, w, h);
