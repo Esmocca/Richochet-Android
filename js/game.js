@@ -2650,9 +2650,9 @@ class Game {
             else if (comp.id === 'side' && this.flankerImg && this.flankerImg.complete) imgToDraw = this.flankerImg;
             
             if (imgToDraw) {
-                const targetH = cardH * 0.15;
+                const targetH = cardH * 0.22;
                 const imgW = targetH * (imgToDraw.width / imgToDraw.height);
-                ctx.drawImage(imgToDraw, cx + (cardW - imgW)/2, cy + cTitleH + cardH * 0.15, imgW, targetH);
+                ctx.drawImage(imgToDraw, cx + (cardW - imgW)/2, cy + cTitleH + cardH * 0.12, imgW, targetH);
             } else {
                 const iSz = cardH * 0.15;
                 ctx.save();
@@ -2720,13 +2720,13 @@ class Game {
             
             // Icon
             const iSize = h * 0.07;
-            const targetH = cardH * 0.15;
+            const targetH = cardH * 0.22;
             if (i === 0 && this.reviveImg && this.reviveImg.complete) {
                 const imgW = targetH * (this.reviveImg.width / this.reviveImg.height);
-                ctx.drawImage(this.reviveImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.15, imgW, targetH);
+                ctx.drawImage(this.reviveImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.12, imgW, targetH);
             } else if (i === 1 && this.speedsterImg && this.speedsterImg.complete) {
                 const imgW = targetH * (this.speedsterImg.width / this.speedsterImg.height);
-                ctx.drawImage(this.speedsterImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.15, imgW, targetH);
+                ctx.drawImage(this.speedsterImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.12, imgW, targetH);
             } else {
                 const iW = textWidth(ctx, item.icon, iSize);
                 drawText(ctx, item.icon, ix + (cardW - iW)/2, iy + cTitleH + cardH * 0.15, iSize, `rgb(${item.color.join(',')})`);
