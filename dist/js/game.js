@@ -541,7 +541,7 @@ class Game {
         const rows = pattern.length;
         const cols = pattern[0].length;
 
-        const bw = 8, bh = 8, sx = 0, sy = 0;
+        const bw = 8, bh = 4.5, sx = 0, sy = 0;
         const totalW = cols * (bw + sx) - sx;
         const startX = (PLAY_AREA_WIDTH - totalW) / 2;
         const startY = 20;
@@ -3873,29 +3873,30 @@ class Game {
             ctx.fillStyle = brickGlow;
             ctx.fillRect(-brick.w * 0.6, -brick.h * 0.6, brick.w * 1.2, brick.h * 1.2);
 
-            // Pixelated 3D Square Block
-            const r = brick.w / 2;
+            // Pixelated 3D Block
+            const rx = brick.w / 2;
+            const ry = brick.h / 2;
             const rCol = brick.color[0], gCol = brick.color[1], bCol = brick.color[2];
 
             // Base square
             ctx.fillStyle = rgba(rCol, gCol, bCol);
-            ctx.fillRect(-r, -r, brick.w, brick.h);
+            ctx.fillRect(-rx, -ry, brick.w, brick.h);
 
             // Pixelated Inner Bevel (Top/Left = highlight, Bottom/Right = shadow)
             const bevel = brick.w * 0.15; // responsive bevel size
             
             ctx.fillStyle = rgba(255, 255, 255, 100);
-            ctx.fillRect(-r, -r, brick.w, bevel); // Top
-            ctx.fillRect(-r, -r, bevel, brick.h); // Left
+            ctx.fillRect(-rx, -ry, brick.w, bevel); // Top
+            ctx.fillRect(-rx, -ry, bevel, brick.h); // Left
 
             ctx.fillStyle = rgba(0, 0, 0, 100);
-            ctx.fillRect(-r, r - bevel, brick.w, bevel); // Bottom
-            ctx.fillRect(r - bevel, -r, bevel, brick.h); // Right
+            ctx.fillRect(-rx, ry - bevel, brick.w, bevel); // Bottom
+            ctx.fillRect(rx - bevel, -ry, bevel, brick.h); // Right
 
             // Strong pixel outline
             ctx.strokeStyle = rgba(0, 0, 0, 150);
             ctx.lineWidth = 1;
-            ctx.strokeRect(-r, -r, brick.w, brick.h);
+            ctx.strokeRect(-rx, -ry, brick.w, brick.h);
 
             ctx.restore();
         }
