@@ -2326,7 +2326,7 @@ class Game {
         else if (comp.id === 'side' && this.flankerImg && this.flankerImg.complete) imgToDraw = this.flankerImg;
 
         if (imgToDraw) {
-            ctx.drawImage(imgToDraw, -7, -7, 14, 14);
+            ctx.drawImage(imgToDraw, -4, -4, 8, 8);
         } else {
             ctx.beginPath();
             ctx.moveTo(0, -5); ctx.lineTo(4, 0); ctx.lineTo(0, 5); ctx.lineTo(-4, 0); ctx.closePath();
@@ -2650,9 +2650,9 @@ class Game {
             else if (comp.id === 'side' && this.flankerImg && this.flankerImg.complete) imgToDraw = this.flankerImg;
             
             if (imgToDraw) {
-                const targetH = cardH * 0.25;
+                const targetH = cardH * 0.15;
                 const imgW = targetH * (imgToDraw.width / imgToDraw.height);
-                ctx.drawImage(imgToDraw, cx + (cardW - imgW)/2, cy + cTitleH + cardH * 0.1, imgW, targetH);
+                ctx.drawImage(imgToDraw, cx + (cardW - imgW)/2, cy + cTitleH + cardH * 0.15, imgW, targetH);
             } else {
                 const iSz = cardH * 0.15;
                 ctx.save();
@@ -2720,13 +2720,13 @@ class Game {
             
             // Icon
             const iSize = h * 0.07;
-            const targetH = cardH * 0.25;
+            const targetH = cardH * 0.15;
             if (i === 0 && this.reviveImg && this.reviveImg.complete) {
                 const imgW = targetH * (this.reviveImg.width / this.reviveImg.height);
-                ctx.drawImage(this.reviveImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.12, imgW, targetH);
+                ctx.drawImage(this.reviveImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.15, imgW, targetH);
             } else if (i === 1 && this.speedsterImg && this.speedsterImg.complete) {
                 const imgW = targetH * (this.speedsterImg.width / this.speedsterImg.height);
-                ctx.drawImage(this.speedsterImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.12, imgW, targetH);
+                ctx.drawImage(this.speedsterImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.15, imgW, targetH);
             } else {
                 const iW = textWidth(ctx, item.icon, iSize);
                 drawText(ctx, item.icon, ix + (cardW - iW)/2, iy + cTitleH + cardH * 0.15, iSize, `rgb(${item.color.join(',')})`);
@@ -2862,12 +2862,11 @@ class Game {
             ctx.fillText('(o.o)', cx + 12, cy + titleH + 30);
         }
         
-        ctx.font = `${h * 0.018}px sans-serif`;
         // Draw dialog
         const lines = msg.split('\\n');
-        let ty = cy + titleH + 25;
+        let ty = cy + titleH + 20;
         for(let li = 0; li < lines.length; li++) {
-            ctx.fillText(lines[li], cx + 70, ty);
+            drawText(ctx, lines[li], cx + 70, ty, h * 0.018, '#000000');
             ty += h * 0.03;
         }
     }
