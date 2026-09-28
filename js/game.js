@@ -110,7 +110,8 @@ class Game {
             'Saturn': document.getElementById('imgSaturn'),
             'Jupiter': document.getElementById('imgJupiter'),
             'Mars': document.getElementById('imgMars'),
-            'Pluto': document.getElementById('imgPluto')
+            'Pluto': document.getElementById('imgPluto'),
+            'Moon': document.getElementById('imgMoon')
         };
 
         this.audio = new AudioManager();
@@ -632,7 +633,7 @@ class Game {
     }
 
     spawnPlanet(randomY = false) {
-        const types = ['Saturn', 'Jupiter', 'Mars', 'Pluto'];
+        const types = ['Saturn', 'Jupiter', 'Mars', 'Pluto', 'Moon'];
         
         // Prevent duplicate planets on screen simultaneously
         const activeTypes = this.planets ? this.planets.map(p => p.type) : [];
@@ -646,6 +647,7 @@ class Game {
         let radius = 20 + Math.random() * 30;
         if (type === 'Jupiter') radius = 60 + Math.random() * 40;
         if (type === 'Pluto') radius = 10 + Math.random() * 10;
+        if (type === 'Moon') radius = 30 + Math.random() * 20;
 
         // Pick a random X somewhere across the full width
         const x = Math.random() * (this.w || 854);
