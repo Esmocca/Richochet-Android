@@ -104,6 +104,14 @@ class Game {
         this.bgCanvas = document.createElement('canvas');
         this.bgCtx = this.bgCanvas.getContext('2d', { alpha: false });
         this.bgPrerendered = false;
+        
+        // Load planet images from HTML
+        this.planetImages = {
+            'Saturn': document.getElementById('imgSaturn'),
+            'Jupiter': document.getElementById('imgJupiter'),
+            'Mars': document.getElementById('imgMars'),
+            'Pluto': document.getElementById('imgPluto')
+        };
 
         this.audio = new AudioManager();
 
@@ -624,25 +632,36 @@ class Game {
     }
 
     spawnPlanet(randomY = false) {
-        const types = ['Saturn', 'Jupiter', 'Mars', 'Pluto', 'Moon'];
-        const type = types[Math.floor(Math.random() * types.length)];
+        const types = ['Saturn', 'Jupiter', 'Mars', 'Pluto'];
         
+        // Prevent duplicate planets on screen simultaneously
+        const activeTypes = this.planets ? this.planets.map(p => p.type) : [];
+        const availableTypes = types.filter(t => !activeTypes.includes(t));
+        
+        // If all types are on screen (which shouldn't happen if we only have 3 planets max),
+        // fallback to random
+        const typePool = availableTypes.length > 0 ? availableTypes : types;
+        const type = typePool[Math.floor(Math.random() * typePool.length)];
+
         let radius = 20 + Math.random() * 30;
         if (type === 'Jupiter') radius = 60 + Math.random() * 40;
         if (type === 'Pluto') radius = 10 + Math.random() * 10;
-        
+
         // Pick a random X somewhere across the full width
         const x = Math.random() * (this.w || 854);
-        const y = randomY ? Math.random() * (this.h || 480) : -radius * 2 - Math.random() * 200;
         
+        // Ensure gap between planets. Don't start exactly at 0 if randomY is false.
+        // Instead of starting just offscreen, spawn it further away to ensure gaps.
+        const gap = 150 + Math.random() * 350;
+        const y = randomY ? Math.random() * (this.h || 480) : -radius * 2 - gap;
+
         const colors = {
             'Saturn': [238, 216, 174],
             'Jupiter': [198, 148, 116],
             'Mars': [193, 68, 14],
-            'Pluto': [140, 150, 160],
-            'Moon': [200, 200, 200]
+            'Pluto': [140, 150, 160]
         };
-        
+
         return {
             x: x,
             y: y,
@@ -668,34 +687,55 @@ class Game {
         for (const p of this.planets) {
             ctx.save();
             ctx.translate(p.x, p.y);
-            
-            // Draw Planet Body
-            const grad = ctx.createRadialGradient(-p.radius*0.3, -p.radius*0.3, 0, 0, 0, p.radius);
-            grad.addColorStop(0, rgba(p.color[0], p.color[1], p.color[2], 255));
-            grad.addColorStop(1, rgba(p.color[0]*0.2, p.color[1]*0.2, p.color[2]*0.2, 255));
-            
-            ctx.beginPath();
-            ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
-            ctx.fillStyle = grad;
-            ctx.fill();
-            
-            // Draw Saturn Ring
-            if (p.type === 'Saturn') {
-                ctx.rotate(p.ringAngle);
+
+            const img = this.planetImages[p.type];
+            if (img && img.complete && img.naturalHeight > 0) {
+                const aspect = img.naturalWidth / img.naturalHeight;
+                const drawW = p.radius * 2 * aspect;
+                const drawH = p.radius * 2;
+                
+                // Block out the stars behind the planet
+                ctx.globalCompositeOperation = 'source-over';
                 ctx.beginPath();
-                ctx.ellipse(0, 0, p.radius * 2.2, p.radius * 0.4, 0, 0, Math.PI * 2);
+                if (p.type === 'Saturn') {
+                    ctx.ellipse(0, 0, drawW/2 * 0.9, drawH/2 * 0.9, 0, 0, Math.PI*2);
+                } else {
+                    ctx.arc(0, 0, p.radius * 0.95, 0, Math.PI*2);
+                }
+                ctx.fillStyle = 'black';
+                ctx.fill();
                 
-                const ringGrad = ctx.createLinearGradient(-p.radius*2.2, 0, p.radius*2.2, 0);
-                ringGrad.addColorStop(0, rgba(200, 180, 150, 0));
-                ringGrad.addColorStop(0.2, rgba(220, 200, 170, 200));
-                ringGrad.addColorStop(0.8, rgba(220, 200, 170, 200));
-                ringGrad.addColorStop(1, rgba(200, 180, 150, 0));
-                
-                ctx.strokeStyle = ringGrad;
-                ctx.lineWidth = p.radius * 0.15;
-                ctx.stroke();
+                // Draw the image using 'screen' so its black bg becomes transparent
+                ctx.globalCompositeOperation = 'screen';
+                ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+            } else {
+                // Fallback basic canvas drawing
+                const grad = ctx.createRadialGradient(-p.radius * 0.3, -p.radius * 0.3, 0, 0, 0, p.radius);
+                grad.addColorStop(0, rgba(p.color[0], p.color[1], p.color[2], 255));
+                grad.addColorStop(1, rgba(p.color[0] * 0.2, p.color[1] * 0.2, p.color[2] * 0.2, 255));
+
+                ctx.beginPath();
+                ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                if (p.type === 'Saturn') {
+                    ctx.rotate(p.ringAngle);
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, p.radius * 2.2, p.radius * 0.4, 0, 0, Math.PI * 2);
+
+                    const ringGrad = ctx.createLinearGradient(-p.radius * 2.2, 0, p.radius * 2.2, 0);
+                    ringGrad.addColorStop(0, rgba(200, 180, 150, 0));
+                    ringGrad.addColorStop(0.2, rgba(220, 200, 170, 200));
+                    ringGrad.addColorStop(0.8, rgba(220, 200, 170, 200));
+                    ringGrad.addColorStop(1, rgba(200, 180, 150, 0));
+
+                    ctx.strokeStyle = ringGrad;
+                    ctx.lineWidth = p.radius * 0.15;
+                    ctx.stroke();
+                }
             }
-            
+
             ctx.restore();
         }
     }
@@ -3396,7 +3436,7 @@ class Game {
 
         // ── FULL SCREEN BACKGROUND ──
         const isMenu = this.state === GameState.Menu || this.state === GameState.Options || this.state === GameState.Shop;
-        
+
         if (isMenu) {
             if (!this.bgPrerendered || this.bgCanvas.width !== w || this.bgCanvas.height !== h) {
                 this.bgCanvas.width = w;
@@ -3408,7 +3448,7 @@ class Game {
                 this.backgroundSpeed = 0.5; // Always draw perfectly aligned 
                 this.drawCyberGrid(this.bgCtx, w, h);
                 this.backgroundSpeed = originalSpeed;
-                
+
                 // Draw stars OVER the sky part of the mountains
                 this.drawStars(this.bgCtx);
 
@@ -3423,7 +3463,7 @@ class Game {
             bgGrad.addColorStop(1, rgba(5, 10, 20, 255));
             ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, w, h);
-            
+
             // Draw Scrolling Planets
             this.drawPlanets(ctx, w, h);
 
