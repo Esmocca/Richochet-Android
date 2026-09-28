@@ -123,6 +123,9 @@ class Game {
         this.boomImg = new Image();
         this.boomImg.src = 'img/boom.png';
         
+        this.hourglassImg = new Image();
+        this.hourglassImg.src = 'img/hourglass.png';
+        
         this.hitEffects = [];
 
         this.audio = new AudioManager();
@@ -3759,9 +3762,9 @@ class Game {
             this.paddleX - this.paddleWidth / 2, 0,
             this.paddleX + this.paddleWidth / 2, 0
         );
-        grad.addColorStop(0, rgba(0, 50, 255));   // Dark Blue
-        grad.addColorStop(0.5, rgba(0, 255, 255)); // Light Blue
-        grad.addColorStop(1, rgba(0, 50, 255));   // Dark Blue
+        grad.addColorStop(0, rgba(Math.max(0, pc[0]-100), Math.max(0, pc[1]-100), Math.max(0, pc[2]-100), 255));
+        grad.addColorStop(0.5, rgba(pc[0], pc[1], pc[2], 255));
+        grad.addColorStop(1, rgba(Math.max(0, pc[0]-100), Math.max(0, pc[1]-100), Math.max(0, pc[2]-100), 255));
 
         // Paddle glow
         const paddleGlow = ctx.createRadialGradient(
@@ -4594,26 +4597,36 @@ class Game {
         const timerText = `${mins}:${secs}`;
         const timerSize = h * 0.045;
         const timerW = textWidth(ctx, timerText, timerSize);
-
-        const timerPadX = 16;
+        
+        const timerPadX = 12;
         const timerBoxW = timerW + timerPadX * 2;
         const timerBoxH = iconSize * 0.8;
+        
+        // Hourglass dimensions
+        const hgH = timerBoxH * 0.7;
+        const hgAspect = (this.hourglassImg && this.hourglassImg.complete && this.hourglassImg.naturalWidth > 0) 
+            ? (this.hourglassImg.naturalWidth / this.hourglassImg.naturalHeight) : 1;
+        const hgW = hgH * hgAspect;
+        
         const timerX = w * 0.97 - timerBoxW;
+        const hgX = timerX - hgW - 10;
         const timerY = uiY;
 
-        // Timer box drop shadow
-        fillRoundedRect(ctx, timerX + 3, timerY + 4, timerBoxW, timerBoxH, timerBoxH / 2, rgba(0, 0, 0, 130));
+        // Draw Hourglass icon
+        if (this.hourglassImg && this.hourglassImg.complete && this.hourglassImg.naturalWidth > 0) {
+            ctx.drawImage(this.hourglassImg, hgX, timerY + (timerBoxH - hgH) / 2, hgW, hgH);
+        }
 
-        // Timer box 3D background
-        const timerGrad = ctx.createLinearGradient(0, timerY, 0, timerY + timerBoxH);
-        timerGrad.addColorStop(0, rgba(50, 30, 35, 220));
-        timerGrad.addColorStop(1, rgba(25, 15, 20, 220));
-        fillRoundedRect(ctx, timerX, timerY, timerBoxW, timerBoxH, timerBoxH / 2, timerGrad);
-        drawRoundedRect(ctx, timerX, timerY, timerBoxW, timerBoxH, timerBoxH / 2);
-        ctx.strokeStyle = rgba(255, 100, 100, 150);
-        ctx.lineWidth = 5;
-        ctx.stroke();
-        drawText(ctx, timerText, timerX + timerPadX, timerY + (timerBoxH - timerSize) / 2, timerSize, rgba(255, 200, 200, 255));
+        // Timer box (rectangular, match health bar style)
+        ctx.fillStyle = rgba(40, 40, 40, 255);
+        ctx.fillRect(timerX, timerY, timerBoxW, timerBoxH);
+        
+        // Thick black border
+        ctx.strokeStyle = rgba(20, 20, 20, 255);
+        ctx.lineWidth = 4;
+        ctx.strokeRect(timerX, timerY, timerBoxW, timerBoxH);
+        
+        drawText(ctx, timerText, timerX + timerPadX, timerY + (timerBoxH - timerSize) / 2, timerSize, rgba(230, 230, 230, 255));
 
         // ── Below Top-right: ARCOSTER & STAGE ──
         const titleText = 'ARCØSTER';
@@ -4807,15 +4820,19 @@ class Game {
         const bottomH = size * 0.65;
         const tableW = size * 0.35;
 
+        // Get base color from selected option
+        const pc = this.paddleColors[this.selectedColorIndex] ? this.paddleColors[this.selectedColorIndex].color : [0, 200, 255];
+        const dim = (c, factor) => Math.max(0, Math.min(255, c * factor));
+
         // Glow behind diamond
         const glowRad = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.2);
-        glowRad.addColorStop(0, rgba(0, 240, 255, 120 * alpha));
-        glowRad.addColorStop(1, rgba(0, 120, 255, 0));
+        glowRad.addColorStop(0, rgba(pc[0], pc[1], pc[2], 120 * alpha));
+        glowRad.addColorStop(1, rgba(pc[0], pc[1], pc[2], 0));
         ctx.fillStyle = glowRad;
         ctx.fillRect(-size * 1.2, -size * 1.2, size * 2.4, size * 2.4);
 
         // Top table facet fill
-        ctx.fillStyle = rgba(180, 245, 255, 240 * alpha);
+        ctx.fillStyle = rgba(dim(pc[0], 1.2), dim(pc[1], 1.2), dim(pc[2], 1.2), 240 * alpha);
         ctx.beginPath();
         ctx.moveTo(0, -topH);
         ctx.lineTo(-tableW, -topH);
@@ -4824,7 +4841,7 @@ class Game {
         ctx.closePath();
         ctx.fill();
 
-        ctx.fillStyle = rgba(220, 255, 255, 255 * alpha);
+        ctx.fillStyle = rgba(dim(pc[0], 1.4), dim(pc[1], 1.4), dim(pc[2], 1.4), 255 * alpha);
         ctx.beginPath();
         ctx.moveTo(0, -topH);
         ctx.lineTo(tableW, -topH);
@@ -4834,7 +4851,7 @@ class Game {
         ctx.fill();
 
         // Upper side facets
-        ctx.fillStyle = rgba(0, 200, 255, 220 * alpha);
+        ctx.fillStyle = rgba(dim(pc[0], 0.9), dim(pc[1], 0.9), dim(pc[2], 0.9), 220 * alpha);
         ctx.beginPath();
         ctx.moveTo(-tableW, -topH);
         ctx.lineTo(-halfW, 0);
@@ -4842,7 +4859,7 @@ class Game {
         ctx.closePath();
         ctx.fill();
 
-        ctx.fillStyle = rgba(0, 170, 240, 220 * alpha);
+        ctx.fillStyle = rgba(dim(pc[0], 0.8), dim(pc[1], 0.8), dim(pc[2], 0.8), 220 * alpha);
         ctx.beginPath();
         ctx.moveTo(tableW, -topH);
         ctx.lineTo(halfW, 0);
@@ -4851,7 +4868,7 @@ class Game {
         ctx.fill();
 
         // Pavilion facets (Bottom triangle facets)
-        ctx.fillStyle = rgba(0, 140, 220, 240 * alpha);
+        ctx.fillStyle = rgba(dim(pc[0], 0.6), dim(pc[1], 0.6), dim(pc[2], 0.6), 240 * alpha);
         ctx.beginPath();
         ctx.moveTo(-halfW, 0);
         ctx.lineTo(0, bottomH);
@@ -4859,7 +4876,7 @@ class Game {
         ctx.closePath();
         ctx.fill();
 
-        ctx.fillStyle = rgba(0, 180, 255, 240 * alpha);
+        ctx.fillStyle = rgba(dim(pc[0], 0.85), dim(pc[1], 0.85), dim(pc[2], 0.85), 240 * alpha);
         ctx.beginPath();
         ctx.moveTo(-halfW * 0.6, 0);
         ctx.lineTo(0, bottomH);
@@ -4867,7 +4884,7 @@ class Game {
         ctx.closePath();
         ctx.fill();
 
-        ctx.fillStyle = rgba(0, 220, 255, 240 * alpha);
+        ctx.fillStyle = rgba(dim(pc[0], 1.0), dim(pc[1], 1.0), dim(pc[2], 1.0), 240 * alpha);
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(0, bottomH);
@@ -4875,7 +4892,7 @@ class Game {
         ctx.closePath();
         ctx.fill();
 
-        ctx.fillStyle = rgba(0, 120, 200, 240 * alpha);
+        ctx.fillStyle = rgba(dim(pc[0], 0.5), dim(pc[1], 0.5), dim(pc[2], 0.5), 240 * alpha);
         ctx.beginPath();
         ctx.moveTo(halfW * 0.6, 0);
         ctx.lineTo(0, bottomH);

@@ -39,3 +39,7 @@ process_image(f"{base}\\media_1790578743241.png", "img/pts_icon.png", "white", r
 
 # BOOM (black bg)
 process_image(f"{base}\\media_1790578777092.png", "img/boom.png", "black")
+
+# Hourglass (white bg), recolor black to white
+process_image(f"{base}\\media_1790583199414.png", "img/hourglass.png", "white", recolor_black_to=(255, 255, 255, 255))
+
