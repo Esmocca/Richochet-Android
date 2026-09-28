@@ -2326,7 +2326,7 @@ class Game {
         else if (comp.id === 'side' && this.flankerImg && this.flankerImg.complete) imgToDraw = this.flankerImg;
 
         if (imgToDraw) {
-            ctx.drawImage(imgToDraw, -14, -14, 28, 28);
+            ctx.drawImage(imgToDraw, -7, -7, 14, 14);
         } else {
             ctx.beginPath();
             ctx.moveTo(0, -5); ctx.lineTo(4, 0); ctx.lineTo(0, 5); ctx.lineTo(-4, 0); ctx.closePath();
@@ -2650,9 +2650,9 @@ class Game {
             else if (comp.id === 'side' && this.flankerImg && this.flankerImg.complete) imgToDraw = this.flankerImg;
             
             if (imgToDraw) {
-                const imgW = cardW * 0.25;
-                const imgH = imgW * (imgToDraw.height / imgToDraw.width);
-                ctx.drawImage(imgToDraw, cx + (cardW - imgW)/2, cy + cTitleH + cardH * 0.1, imgW, imgH);
+                const targetH = cardH * 0.25;
+                const imgW = targetH * (imgToDraw.width / imgToDraw.height);
+                ctx.drawImage(imgToDraw, cx + (cardW - imgW)/2, cy + cTitleH + cardH * 0.1, imgW, targetH);
             } else {
                 const iSz = cardH * 0.15;
                 ctx.save();
@@ -2720,14 +2720,13 @@ class Game {
             
             // Icon
             const iSize = h * 0.07;
+            const targetH = cardH * 0.25;
             if (i === 0 && this.reviveImg && this.reviveImg.complete) {
-                const imgW = cardW * 0.15;
-                const imgH = imgW * (this.reviveImg.height / this.reviveImg.width);
-                ctx.drawImage(this.reviveImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.15, imgW, imgH);
+                const imgW = targetH * (this.reviveImg.width / this.reviveImg.height);
+                ctx.drawImage(this.reviveImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.12, imgW, targetH);
             } else if (i === 1 && this.speedsterImg && this.speedsterImg.complete) {
-                const imgW = cardW * 0.15;
-                const imgH = imgW * (this.speedsterImg.height / this.speedsterImg.width);
-                ctx.drawImage(this.speedsterImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.15, imgW, imgH);
+                const imgW = targetH * (this.speedsterImg.width / this.speedsterImg.height);
+                ctx.drawImage(this.speedsterImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.12, imgW, targetH);
             } else {
                 const iW = textWidth(ctx, item.icon, iSize);
                 drawText(ctx, item.icon, ix + (cardW - iW)/2, iy + cTitleH + cardH * 0.15, iSize, `rgb(${item.color.join(',')})`);
