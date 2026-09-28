@@ -4563,31 +4563,7 @@ class Game {
         ctx.lineWidth = 4;
         ctx.strokeRect(livesX, livesY, livesW, livesH);
         
-        // Heart icon & 100/100 text below the bar
-        const heartY = livesY + livesH + 12;
-        const heartSize = 12;
-        
-        // Draw heart shape
-        ctx.save();
-        ctx.translate(livesX + heartSize, heartY);
-        ctx.scale(heartSize/25, heartSize/25);
-        ctx.beginPath();
-        ctx.moveTo(0, 15);
-        ctx.bezierCurveTo(0, 0, -25, 0, -25, 15);
-        ctx.bezierCurveTo(-25, 30, 0, 45, 0, 50);
-        ctx.bezierCurveTo(0, 45, 25, 30, 25, 15);
-        ctx.bezierCurveTo(25, 0, 0, 0, 0, 15);
-        ctx.fillStyle = rgba(200, 30, 30, 255);
-        ctx.fill();
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = rgba(20, 20, 20, 255);
-        ctx.stroke();
-        ctx.restore();
-        
-        // 100/100 Text
-        const hpVal = Math.max(0, this.lives) * 20;
-        const hpText = `${hpVal}/100`;
-        drawText(ctx, hpText, livesX + heartSize * 2 + 10, heartY - 5, h * 0.035, rgba(230, 230, 230, 255));
+
 
         // ── Below Top-left: Score & Combo ──
         const scoreText = `${this.score}`;
