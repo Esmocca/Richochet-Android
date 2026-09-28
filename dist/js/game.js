@@ -410,8 +410,8 @@ class Game {
                     [0, 0, 0, 0, 1, 0, 0, 0, 0]
                 ],
                 colors: [
-                    [255, 40, 90],
-                    [255, 120, 180]
+                    [160, 0, 60],   // 1: Deep Crimson Red
+                    [190, 30, 90]   // 2: Dark Neon Pink
                 ]
             },
             // Level 2: Diamond (Stage 02)
@@ -428,8 +428,8 @@ class Game {
                     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
                 ],
                 colors: [
-                    [20, 200, 255],  // 1: Lines/Edges (Cyan)
-                    [200, 240, 255]  // 2: Body (Ice White/Light Blue)
+                    [0, 80, 150],   // 1: Deep Ocean Blue
+                    [0, 130, 200]   // 2: Deep Cyan
                 ]
             },
             // Level 3: Flame (Stage 03)
@@ -447,8 +447,8 @@ class Game {
                     [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0]
                 ],
                 colors: [
-                    [255, 60, 0],   // 1: Outer Red-Orange
-                    [255, 160, 0]   // 2: Inner Orange-Yellow
+                    [170, 20, 0],   // 1: Deep Blood Orange
+                    [190, 80, 0]    // 2: Dark Amber
                 ]
             },
             // Level 4: Star (Stage 04)
@@ -467,8 +467,8 @@ class Game {
                     [1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1]
                 ],
                 colors: [
-                    [255, 150, 0],   // 1: Gold/Dark Yellow
-                    [255, 230, 0]    // 2: Bright Yellow
+                    [150, 90, 0],   // 1: Dark Bronze/Gold
+                    [180, 140, 0]   // 2: Deep Golden Yellow
                 ]
             },
             // Level 5: Skull (Stage 05)
@@ -486,9 +486,9 @@ class Game {
                     [0, 0, 0, 3, 3, 3, 3, 3, 0, 0, 0]  // Jaw bottom
                 ],
                 colors: [
-                    [100, 100, 110], // 1: Border
-                    [230, 230, 240], // 2: Bone
-                    [210, 210, 220]  // 3: Jaw Bone
+                    [60, 60, 80],    // 1: Deep Purple-Gray
+                    [130, 130, 160], // 2: Muted Lavender-Bone
+                    [100, 100, 130]  // 3: Dark Jaw Bone
                 ]
             }
         ];
