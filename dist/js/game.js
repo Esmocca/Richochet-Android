@@ -1069,28 +1069,32 @@ class Game {
 
     handleOptionsTap(vx, vy) {
         const w = this.w, h = this.h;
-        const boxX = (w - w * 0.65) / 2;
-        const boxY = h * 0.18;
-        const boxW = w * 0.65;
-        const boxH = h * 0.68;
-
+        const winW = w * 0.9;
+        const winH = h * 0.9;
+        const winX = (w - winW) / 2;
+        const winY = (h - winH) / 2;
+        const titleH = h * 0.08;
+        
+        const rowStartY = winY + titleH + h * 0.08;
+        const rowStep = h * 0.14;
+        
         // Paddle color area
-        if (vy >= boxY + h * 0.05 && vy <= boxY + h * 0.15) {
+        if (vy >= rowStartY - h * 0.02 && vy <= rowStartY + h * 0.08) {
             this.optionSelectedIndex = 0;
             if (vx < w / 2) this.selectedColorIndex = (this.selectedColorIndex - 1 + this.paddleColors.length) % this.paddleColors.length;
             else this.selectedColorIndex = (this.selectedColorIndex + 1) % this.paddleColors.length;
             this.audio.init(); this.audio.playBrickSound(1.1);
             this.saveSettings();
         }
-        // Volume area (Tap anywhere on row or drag slider)
-        else if (vy >= boxY + h * 0.15 && vy <= boxY + h * 0.25) {
+        // Volume area
+        else if (vy >= rowStartY + rowStep - h * 0.02 && vy <= rowStartY + rowStep + h * 0.08) {
             this.optionSelectedIndex = 1;
-            const barX = boxX + boxW * 0.50;
-            const barW = boxW * 0.40;
+            const barX = winX + winW * 0.5;
+            const barW = winW * 0.40;
             this.updateVolumeFromPos(vx, barX, barW);
         }
         // Difficulty area
-        else if (vy >= boxY + h * 0.26 && vy <= boxY + h * 0.35) {
+        else if (vy >= rowStartY + rowStep * 2 - h * 0.02 && vy <= rowStartY + rowStep * 2 + h * 0.08) {
             this.optionSelectedIndex = 2;
             if (vx < w / 2) this.difficulty = (this.difficulty - 1 + 3) % 3;
             else this.difficulty = (this.difficulty + 1) % 3;
@@ -1098,14 +1102,27 @@ class Game {
             this.saveSettings();
         }
         // Button Size area
-        else if (vy >= boxY + h * 0.37 && vy <= boxY + h * 0.46) {
+        else if (vy >= rowStartY + rowStep * 3 - h * 0.02 && vy <= rowStartY + rowStep * 3 + h * 0.08) {
             this.optionSelectedIndex = 3;
-            const barX = boxX + boxW * 0.50;
-            const barW = boxW * 0.40;
+            const barX = winX + winW * 0.5;
+            const barW = winW * 0.40;
             this.updateBtnSizeFromPos(vx, barX, barW);
         }
-        // BACK button area
-        else if (vy >= boxY + boxH * 0.78) {
+        // Close Button (X in top right)
+        const btnSize = h * 0.05;
+        const btnX = winX + winW - btnSize - 6;
+        const btnY = winY + 8;
+        if (vx >= btnX && vx <= btnX + btnSize && vy >= btnY && vy <= btnY + btnSize) {
+            this.audio.init();
+            this.audio.playBrickSound(0.6);
+            this.triggerStateTransition(GameState.Menu);
+        }
+        // Back Button (Bottom)
+        const backBtnW = winW * 0.30;
+        const backBtnH = h * 0.065;
+        const backBtnX = (w - backBtnW) / 2;
+        const backY = winY + winH - backBtnH - h*0.05;
+        if (vx >= backBtnX && vx <= backBtnX + backBtnW && vy >= backY && vy <= backY + backBtnH) {
             this.optionSelectedIndex = 4;
             this.audio.init();
             this.audio.playBrickSound(0.6);
@@ -1115,22 +1132,24 @@ class Game {
 
     handleOptionsDrag(vx, vy) {
         const w = this.w, h = this.h;
-        const boxX = (w - w * 0.65) / 2;
-        const boxY = h * 0.18;
-        const boxW = w * 0.65;
+        const winW = w * 0.9;
+        const winX = (w - winW) / 2;
+        const winH = h * 0.9;
+        const winY = (h - winH) / 2;
+        const titleH = h * 0.08;
+        const rowStartY = winY + titleH + h * 0.08;
+        const rowStep = h * 0.14;
 
-        // Volume row Y region
-        if (vy >= boxY + h * 0.14 && vy <= boxY + h * 0.26) {
+        if (vy >= rowStartY + rowStep - h * 0.02 && vy <= rowStartY + rowStep + h * 0.08) {
             this.optionSelectedIndex = 1;
-            const barX = boxX + boxW * 0.50;
-            const barW = boxW * 0.40;
+            const barX = winX + winW * 0.5;
+            const barW = winW * 0.40;
             this.updateVolumeFromPos(vx, barX, barW);
         }
-        // Button Size row Y region
-        else if (vy >= boxY + h * 0.37 && vy <= boxY + h * 0.46) {
+        else if (vy >= rowStartY + rowStep * 3 - h * 0.02 && vy <= rowStartY + rowStep * 3 + h * 0.08) {
             this.optionSelectedIndex = 3;
-            const barX = boxX + boxW * 0.50;
-            const barW = boxW * 0.40;
+            const barX = winX + winW * 0.5;
+            const barW = winW * 0.40;
             this.updateBtnSizeFromPos(vx, barX, barW);
         }
     }
@@ -3695,62 +3714,63 @@ class Game {
     // ─── Options ──────────────────────────────────────
 
     drawOptions(ctx, w, h) {
-        // ── Background vignette ──
-        const vigGrad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.7);
-        vigGrad.addColorStop(0, rgba(0, 0, 0, 0));
-        vigGrad.addColorStop(1, rgba(0, 0, 0, 160));
-        ctx.fillStyle = vigGrad;
+        // Background Teal
+        ctx.fillStyle = '#008080';
         ctx.fillRect(0, 0, w, h);
 
-        // ── Title ──
-        const titleText = '- OPTION -';
-        const titleSize = h * 0.055;
-        const titleW = textWidth(ctx, titleText, titleSize);
-        drawText(ctx, titleText, (w - titleW) / 2 + 2, h * 0.065 + 2, titleSize, rgba(255, 120, 0, 60));
-        drawText(ctx, titleText, (w - titleW) / 2, h * 0.065, titleSize, rgba(255, 180, 60, 230));
+        const winW = w * 0.9;
+        const winH = h * 0.9;
+        const winX = (w - winW) / 2;
+        const winY = (h - winH) / 2;
+        
+        ctx.fillStyle = '#dfdfdf';
+        ctx.fillRect(winX, winY, winW, winH);
+        
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(winX, winY, winW, winH);
+        
+        const titleH = h * 0.08;
+        ctx.fillStyle = '#0000a8';
+        ctx.fillRect(winX + 2, winY + 2, winW - 4, titleH);
+        drawText(ctx, 'OPTION.EXE', winX + 15, winY + 12, titleH * 0.6, '#ffffff');
 
-        // Subtitle tag
-        const subTag = 'Game Settings';
-        const subTagSize = h * 0.022;
-        const subTagW = textWidth(ctx, subTag, subTagSize);
-        drawText(ctx, subTag, (w - subTagW) / 2, h * 0.135, subTagSize, rgba(200, 200, 220, 140));
-
-        // Separator
-        const sepY = h * 0.165;
-        ctx.strokeStyle = rgba(255, 120, 0, 80);
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(w * 0.1, sepY); ctx.lineTo(w * 0.9, sepY); ctx.stroke();
+        // Close Button
+        const btnSize = h * 0.05;
+        const btnX = winX + winW - btnSize - 6;
+        const btnY = winY + 8;
+        this.drawWin3Button(ctx, btnX, btnY, btnSize, btnSize);
+        drawText(ctx, 'X', btnX + btnSize*0.25, btnY + btnSize*0.1, btnSize*0.7, '#000000');
 
         // ── Settings rows ──
-        const rowStartY = h * 0.21;
-        const rowStep = h * 0.145;
-        const labelX = w * 0.10;
-        const valueX = w * 0.60;
+        const rowStartY = winY + titleH + h * 0.08;
+        const rowStep = h * 0.14;
+        const labelX = winX + winW * 0.10;
+        const valueX = winX + winW * 0.50;
         const rowFontSz = h * 0.030;
-        const selColor = rgba(255, 210, 60);
-        const normColor = rgba(180, 185, 200);
+        const selColor = '#0000a8';
+        const normColor = '#000000';
 
-        // Row background helper
+        // Row background helper (draw win32 inverted button if selected)
         const drawRowBg = (idx, selected) => {
-            const ry = rowStartY + idx * rowStep - rowFontSz * 0.3;
-            const rowH = rowFontSz * 1.8;
+            const ry = rowStartY + idx * rowStep - rowFontSz * 0.4;
+            const rowH = rowFontSz * 2.0;
             if (selected) {
-                fillRoundedRect(ctx, w * 0.06, ry, w * 0.88, rowH, 4, rgba(255, 140, 0, 18));
-                drawRoundedRect(ctx, w * 0.06, ry, w * 0.88, rowH, 4);
-                ctx.strokeStyle = rgba(255, 140, 0, 80);
+                // Focus rect
+                ctx.strokeStyle = '#000000';
+                ctx.setLineDash([2, 2]);
                 ctx.lineWidth = 1;
-                ctx.stroke();
-            } else {
-                fillRoundedRect(ctx, w * 0.06, ry, w * 0.88, rowH, 4, rgba(255, 255, 255, 5));
+                ctx.strokeRect(winX + winW * 0.05, ry, winW * 0.9, rowH);
+                ctx.setLineDash([]);
             }
         };
 
         // 1. Paddle Color
         const sel0 = this.optionSelectedIndex === 0;
         drawRowBg(0, sel0);
-        drawText(ctx, 'Paddle Color', labelX, rowStartY, rowFontSz, sel0 ? selColor : normColor);
-        const colorLabel = (sel0 ? '< ' : '  ') + this.paddleColors[this.selectedColorIndex].label + (sel0 ? ' >' : '  ');
-        drawText(ctx, colorLabel, valueX, rowStartY, rowFontSz, sel0 ? selColor : normColor);
+        drawText(ctx, 'PADDLE COLOR', labelX, rowStartY, rowFontSz, normColor);
+        const colorLabel = (sel0 ? '< ' : '  ') + this.paddleColors[this.selectedColorIndex].label.toUpperCase() + (sel0 ? ' >' : '  ');
+        drawText(ctx, colorLabel, valueX, rowStartY, rowFontSz, normColor);
 
         // Color preview dot
         const dotColor = this.paddleColors[this.selectedColorIndex].rgb || [0, 200, 255];
@@ -3758,128 +3778,95 @@ class Game {
         ctx.arc(valueX - 14, rowStartY + rowFontSz * 0.5, 5, 0, Math.PI * 2);
         ctx.fillStyle = rgba(dotColor[0] ?? 0, dotColor[1] ?? 200, dotColor[2] ?? 255);
         ctx.fill();
+        ctx.strokeStyle = '#000000'; ctx.lineWidth = 1; ctx.stroke();
 
         // 2. Volume
         const sel1 = this.optionSelectedIndex === 1;
         const volY = rowStartY + rowStep;
         drawRowBg(1, sel1);
-        drawText(ctx, 'Volume', labelX, volY, rowFontSz, sel1 ? selColor : normColor);
+        drawText(ctx, 'VOLUME', labelX, volY, rowFontSz, normColor);
 
         const volPct = `${this.volume}%`;
         const volPctW = textWidth(ctx, volPct, rowFontSz * 0.9);
-        drawText(ctx, volPct, valueX - volPctW - 8, volY, rowFontSz * 0.9, sel1 ? selColor : normColor);
+        drawText(ctx, volPct, valueX - volPctW - 8, volY, rowFontSz * 0.9, normColor);
 
         const barX = valueX;
         const barY2 = volY + rowFontSz * 0.25;
-        const barW = w * 0.28;
-        const barH2 = 10;
+        const barW = winW * 0.40;
+        const barH2 = 12;
 
-        // Track
-        fillRoundedRect(ctx, barX, barY2, barW, barH2, 4, rgba(30, 30, 45, 230));
+        // Track (sunken)
+        ctx.fillStyle = '#808080'; ctx.fillRect(barX, barY2, barW, barH2);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(barX+1, barY2+1, barW-1, barH2-1);
+        ctx.fillStyle = '#000000'; ctx.fillRect(barX, barY2, barW-1, 1); ctx.fillRect(barX, barY2, 1, barH2-1);
+
         // Fill
         const fillW2 = Math.max(0, barW * (this.volume / 100));
         if (fillW2 > 0) {
-            const barGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
-            barGrad.addColorStop(0, rgba(255, 140, 0, 220));
-            barGrad.addColorStop(1, rgba(255, 220, 60, 220));
-            fillRoundedRect(ctx, barX, barY2, fillW2, barH2, 4, barGrad);
+            ctx.fillStyle = '#0000a8';
+            ctx.fillRect(barX + 2, barY2 + 2, fillW2 - 4, barH2 - 4);
         }
-        drawRoundedRect(ctx, barX, barY2, barW, barH2, 4);
-        ctx.strokeStyle = rgba(255, 140, 0, sel1 ? 200 : 80);
-        ctx.lineWidth = sel1 ? 1.5 : 1;
-        ctx.stroke();
 
-        // Knob
-        const knobX2 = barX + fillW2;
-        ctx.beginPath();
-        ctx.arc(knobX2, barY2 + barH2 / 2, 7, 0, Math.PI * 2);
-        ctx.fillStyle = sel1 ? rgba(255, 220, 60) : rgba(255, 140, 0);
-        ctx.fill();
-        ctx.strokeStyle = rgba(255, 255, 255, 200);
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+        // Knob (Win98 button style)
+        const knobX2 = barX + fillW2 - 6;
+        this.drawWin3Button(ctx, knobX2, barY2 - 4, 12, barH2 + 8);
 
         // 3. Difficulty
         const sel2 = this.optionSelectedIndex === 2;
         const diffY = rowStartY + rowStep * 2;
         drawRowBg(2, sel2);
-        drawText(ctx, 'Difficulty', labelX, diffY, rowFontSz, sel2 ? selColor : normColor);
-        const diffText = (sel2 ? '< ' : '  ') + this.difficulties[this.difficulty] + (sel2 ? ' >' : '  ');
+        drawText(ctx, 'DIFFICULTY', labelX, diffY, rowFontSz, normColor);
+        const diffText = (sel2 ? '< ' : '  ') + this.difficulties[this.difficulty].toUpperCase() + (sel2 ? ' >' : '  ');
         const diffColors = [rgba(80, 255, 140), rgba(255, 200, 0), rgba(255, 60, 80)];
-        drawText(ctx, diffText, valueX, diffY, rowFontSz, sel2 ? diffColors[this.difficulty] : normColor);
-
-        // Difficulty pip indicators
-        for (let d = 0; d < 3; d++) {
-            const pipX = valueX - 30 + d * 8;
-            const pipY = diffY + rowFontSz * 0.5;
-            ctx.beginPath();
-            ctx.arc(pipX, pipY, 3, 0, Math.PI * 2);
-            ctx.fillStyle = d <= this.difficulty ? rgba(255, 180, 0) : rgba(60, 60, 80);
-            ctx.fill();
-        }
+        drawText(ctx, diffText, valueX, diffY, rowFontSz, diffColors[this.difficulty]);
 
         // 4. Button Size
         const sel3 = this.optionSelectedIndex === 3;
         const sizeY = rowStartY + rowStep * 3;
         drawRowBg(3, sel3);
-        drawText(ctx, 'Button Size', labelX, sizeY, rowFontSz, sel3 ? selColor : normColor);
+        drawText(ctx, 'BUTTON SIZE', labelX, sizeY, rowFontSz, normColor);
 
         const sizePct = `${this.btnScale}%`;
         const sizePctW = textWidth(ctx, sizePct, rowFontSz * 0.9);
-        drawText(ctx, sizePct, valueX - sizePctW - 8, sizeY, rowFontSz * 0.9, sel3 ? selColor : normColor);
+        drawText(ctx, sizePct, valueX - sizePctW - 8, sizeY, rowFontSz * 0.9, normColor);
 
         const sbarX = valueX;
         const sbarY2 = sizeY + rowFontSz * 0.25;
-        const sbarW = w * 0.28;
-        const sbarH2 = 10;
+        const sbarW = winW * 0.40;
+        const sbarH2 = 12;
 
-        fillRoundedRect(ctx, sbarX, sbarY2, sbarW, sbarH2, 4, rgba(30, 30, 45, 230));
+        ctx.fillStyle = '#808080'; ctx.fillRect(sbarX, sbarY2, sbarW, sbarH2);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(sbarX+1, sbarY2+1, sbarW-1, sbarH2-1);
+        ctx.fillStyle = '#000000'; ctx.fillRect(sbarX, sbarY2, sbarW-1, 1); ctx.fillRect(sbarX, sbarY2, 1, sbarH2-1);
+
         const sfillW2 = Math.max(0, sbarW * ((this.btnScale - 90) / 30));
         if (sfillW2 > 0) {
-            const barGrad = ctx.createLinearGradient(sbarX, 0, sbarX + sbarW, 0);
-            barGrad.addColorStop(0, rgba(255, 140, 0, 220));
-            barGrad.addColorStop(1, rgba(255, 220, 60, 220));
-            fillRoundedRect(ctx, sbarX, sbarY2, sfillW2, sbarH2, 4, barGrad);
+            ctx.fillStyle = '#0000a8';
+            ctx.fillRect(sbarX + 2, sbarY2 + 2, sfillW2 - 4, sbarH2 - 4);
         }
-        drawRoundedRect(ctx, sbarX, sbarY2, sbarW, sbarH2, 4);
-        ctx.strokeStyle = rgba(255, 140, 0, sel3 ? 200 : 80);
-        ctx.lineWidth = sel3 ? 1.5 : 1;
-        ctx.stroke();
 
-        const sknobX2 = sbarX + sfillW2;
-        ctx.beginPath();
-        ctx.arc(sknobX2, sbarY2 + sbarH2 / 2, 7, 0, Math.PI * 2);
-        ctx.fillStyle = sel3 ? rgba(255, 220, 60) : rgba(255, 140, 0);
-        ctx.fill();
-        ctx.strokeStyle = rgba(255, 255, 255, 200);
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+        const sknobX2 = sbarX + sfillW2 - 6;
+        this.drawWin3Button(ctx, sknobX2, sbarY2 - 4, 12, sbarH2 + 8);
 
         // ── Back button ──
         const selBack = this.optionSelectedIndex === 4;
-        const backY = h * 0.78;
-        const backBtnW = w * 0.30;
+        const backBtnW = winW * 0.30;
         const backBtnH = h * 0.065;
         const backBtnX = (w - backBtnW) / 2;
+        const backY = winY + winH - backBtnH - h*0.05;
 
-        fillRoundedRect(ctx, backBtnX, backY, backBtnW, backBtnH, 5,
-            rgba(255, 120, 0, selBack ? 40 : 15));
-        drawRoundedRect(ctx, backBtnX, backY, backBtnW, backBtnH, 5);
-        ctx.strokeStyle = rgba(255, 140, 0, selBack ? 220 : 70);
-        ctx.lineWidth = selBack ? 2 : 1;
-        ctx.stroke();
+        this.drawWin3Button(ctx, backBtnX, backY, backBtnW, backBtnH);
+        if (selBack) {
+            ctx.strokeStyle = '#000000';
+            ctx.setLineDash([2, 2]);
+            ctx.strokeRect(backBtnX + 4, backY + 4, backBtnW - 8, backBtnH - 8);
+            ctx.setLineDash([]);
+        }
 
-        const backText = 'BACK TO MENU';
+        const backText = 'OK';
         const backFontSz = h * 0.030;
         const bw2 = textWidth(ctx, backText, backFontSz);
-        drawText(ctx, backText, (w - bw2) / 2, backY + (backBtnH - backFontSz) / 2, backFontSz,
-            selBack ? rgba(255, 255, 255) : rgba(200, 160, 60));
-
-        // ── Help ──
-        const helpText = '[ Arrow keys to navigate | Left/Right to change ]';
-        const helpSize = h * 0.020;
-        const helpW = textWidth(ctx, helpText, helpSize);
-        drawText(ctx, helpText, (w - helpW) / 2, h * 0.92, helpSize, rgba(120, 120, 140, 160));
+        drawText(ctx, backText, (w - bw2) / 2, backY + (backBtnH - backFontSz) / 2 + 2, backFontSz, '#000000');
     }
 
     // ─── Stage Clear & Game Over Overlay ─────────────────
