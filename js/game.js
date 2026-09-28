@@ -2148,7 +2148,7 @@ class Game {
             this.shakeIntensity = 3.5;
             this.hitLagTimer = 0.04;
 
-            this.spawnHitEffect(centerBrick.x, centerBrick.y, false);
+            this.spawnHitEffect(centerBrick.x, centerBrick.y, this.combo >= 10);
 
             // Audio variant based on combo
             if (this.combo >= 3) {
