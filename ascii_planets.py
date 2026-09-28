@@ -64,13 +64,7 @@ def image_to_ascii(filepath, font_path="C:\\Windows\\Fonts\\lucon.ttf", font_siz
     out_img.save(filepath)
     print(f"ASCII-fied {filepath}")
 
-# Convert gameplay bg
-image_to_ascii("img/gameplay_bg.png", is_bg=True)
-
-# Copy to dist
 import shutil
-shutil.copy("img/gameplay_bg.png", "dist/img/gameplay_bg.png")
-
 # Convert planets
 for i in range(1, 6):
     image_to_ascii(f"img/planet{i}.png")
