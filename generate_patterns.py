@@ -44,20 +44,20 @@ def img_to_pattern(img_path, target_width=38):
 patterns = []
 
 # Stage 1: Lily
-lily_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790660144567.jpg"
-patterns.append(img_to_pattern(lily_path, target_width=38))
+lily_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790573726237.png"
+patterns.append(img_to_pattern(lily_path, target_width=26))
 
 # Stage 2: Diamond
-patterns.append(img_to_pattern("diamond.png", target_width=32))
+patterns.append(img_to_pattern("diamond.png", target_width=22))
 
 # Stage 3: Flame
-patterns.append(img_to_pattern("flame.png", target_width=30))
+patterns.append(img_to_pattern("flame.png", target_width=20))
 
 # Stage 4: Star
-patterns.append(img_to_pattern("star.png", target_width=36))
+patterns.append(img_to_pattern("star.png", target_width=24))
 
 # Stage 5: Skull
-patterns.append(img_to_pattern("skull.png", target_width=34))
+patterns.append(img_to_pattern("skull.png", target_width=22))
 
 with open("patterns.json", "w") as f:
     json.dump(patterns, f)
