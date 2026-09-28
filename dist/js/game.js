@@ -126,6 +126,15 @@ class Game {
         this.hourglassImg = new Image();
         this.hourglassImg.src = 'img/hourglass.png';
         
+        this.reviveImg = new Image();
+        this.reviveImg.src = 'img/icon_revive.png';
+        
+        this.speedsterImg = new Image();
+        this.speedsterImg.src = 'img/icon_speedster.png';
+        
+        this.celloImg = new Image();
+        this.celloImg.src = 'img/icon_cello.png';
+        
         this.hitEffects = [];
 
         this.audio = new AudioManager();
@@ -2704,8 +2713,18 @@ class Game {
             
             // Icon
             const iSize = h * 0.07;
-            const iW = textWidth(ctx, item.icon, iSize);
-            drawText(ctx, item.icon, ix + (cardW - iW)/2, iy + cTitleH + cardH * 0.15, iSize, `rgb(${item.color.join(',')})`);
+            if (i === 0 && this.reviveImg && this.reviveImg.complete) {
+                const imgW = cardW * 0.4;
+                const imgH = imgW * (this.reviveImg.height / this.reviveImg.width);
+                ctx.drawImage(this.reviveImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.05, imgW, imgH);
+            } else if (i === 1 && this.speedsterImg && this.speedsterImg.complete) {
+                const imgW = cardW * 0.4;
+                const imgH = imgW * (this.speedsterImg.height / this.speedsterImg.width);
+                ctx.drawImage(this.speedsterImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.05, imgW, imgH);
+            } else {
+                const iW = textWidth(ctx, item.icon, iSize);
+                drawText(ctx, item.icon, ix + (cardW - iW)/2, iy + cTitleH + cardH * 0.15, iSize, `rgb(${item.color.join(',')})`);
+            }
             
             // Desc
             const dSize = h * 0.022;
@@ -2828,10 +2847,14 @@ class Game {
         ctx.fillRect(cx + 2, cy + 2, cw - 4, titleH);
         drawText(ctx, 'CELLO.EXE', cx + 10, cy + 6, h * 0.03, '#ffffff');
         
-        // Simple ASCII face
-        ctx.fillStyle = '#000000';
-        ctx.font = `bold ${h * 0.025}px monospace`;
-        ctx.fillText('(o.o)', cx + 12, cy + titleH + 30);
+        // Cello Avatar
+        if (this.celloImg && this.celloImg.complete) {
+            ctx.drawImage(this.celloImg, cx + 8, cy + titleH + 5, 50, 50);
+        } else {
+            ctx.fillStyle = '#000000';
+            ctx.font = `bold ${h * 0.025}px monospace`;
+            ctx.fillText('(o.o)', cx + 12, cy + titleH + 30);
+        }
         
         ctx.font = `${h * 0.018}px sans-serif`;
         // Draw dialog
