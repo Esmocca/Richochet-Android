@@ -3469,10 +3469,19 @@ class Game {
                 const drawW = w;
                 const drawH = w / aspect;
                 
-                this.bgScrollY = this.bgScrollY % drawH;
+                // Use 2x height loop to mirror it seamlessly
+                this.bgScrollY = this.bgScrollY % (2 * drawH);
                 
+                // Normal
                 ctx.drawImage(this.gameplayBgImg, 0, this.bgScrollY, drawW, drawH);
-                ctx.drawImage(this.gameplayBgImg, 0, this.bgScrollY - drawH, drawW, drawH);
+                ctx.drawImage(this.gameplayBgImg, 0, this.bgScrollY - 2 * drawH, drawW, drawH);
+                
+                // Mirrored
+                ctx.save();
+                ctx.translate(0, this.bgScrollY - drawH + drawH/2);
+                ctx.scale(1, -1);
+                ctx.drawImage(this.gameplayBgImg, 0, -drawH/2, drawW, drawH);
+                ctx.restore();
             } else {
                 const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
                 bgGrad.addColorStop(0, rgba(2, 4, 15, 255));
