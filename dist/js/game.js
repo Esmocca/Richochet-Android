@@ -2507,6 +2507,7 @@ class Game {
             if (!comp.equipped) {
                 this.companions.forEach(c => c.equipped = false);
                 comp.equipped = true;
+                this.equippedCompanion = comp.id;
                 this.audio.init(); this.audio.playBrickSound(1.3);
                 this.saveSettings();
             }
