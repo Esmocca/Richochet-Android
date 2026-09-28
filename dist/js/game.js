@@ -533,17 +533,25 @@ class Game {
         const cols = pattern[0].length;
 
         const sx = 0, sy = 0;
-        // Dynamically scale block width based on columns to fit PLAY_AREA_WIDTH (with some padding)
-        const maxWidth = PLAY_AREA_WIDTH * 0.85;
-        let bw = 14; 
-        if (cols > 20) {
+        
+        let bw = 12; 
+        let bh = 7.7; 
+        
+        const maxWidth = PLAY_AREA_WIDTH * 0.75;
+        if (cols * bw > maxWidth) {
             bw = maxWidth / cols;
+            bh = bw * (9/14);
         }
-        const bh = bw * (9/14); 
+        
+        const maxHeight = V_HEIGHT * 0.45; 
+        if (rows * bh > maxHeight) {
+            bh = maxHeight / rows;
+            bw = bh * (14/9);
+        }
 
         const totalW = cols * (bw + sx) - sx;
         const startX = (PLAY_AREA_WIDTH - totalW) / 2;
-        const startY = 20;
+        const startY = 25;
 
         const hexToRgb = (hex) => {
             const bigint = parseInt(hex.slice(1), 16);
