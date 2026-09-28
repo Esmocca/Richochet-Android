@@ -113,6 +113,17 @@ class Game {
             'Pluto': document.getElementById('imgPluto'),
             'Moon': document.getElementById('imgMoon')
         };
+        
+        this.ptsIconImg = new Image();
+        this.ptsIconImg.src = 'img/pts_icon.png';
+        
+        this.burstImg = new Image();
+        this.burstImg.src = 'img/burst.png';
+        
+        this.boomImg = new Image();
+        this.boomImg.src = 'img/boom.png';
+        
+        this.hitEffects = [];
 
         this.audio = new AudioManager();
 
@@ -1351,6 +1362,7 @@ class Game {
             }
         }
         this.updateFloatingTexts(dt);
+        this.updateHitEffects(dt);
         this.updateConfetti(dt);
         this.updateCoinDrops(dt);
         this.updateCompanionProjectiles(dt);
@@ -1642,6 +1654,9 @@ class Game {
                 this.shakeTimer = 0.15;
                 this.shakeIntensity = 3.5;
                 this.hitLagTimer = 0.04;
+                
+                // Spawn hit effect (burst, or boom if combo > 10)
+                this.spawnHitEffect(brick.x, brick.y, this.combo > 10);
 
                 // Audio variant based on combo
                 if (this.combo >= 3) {
@@ -1803,6 +1818,50 @@ class Game {
             alpha: 255
         });
     }
+
+    spawnHitEffect(x, y, isBoom) {
+        this.hitEffects.push({
+            x, y,
+            lifetime: 0,
+            maxLifetime: isBoom ? 0.6 : 0.4,
+            isBoom,
+            scale: 0.1,
+            alpha: 1.0,
+            rotation: (Math.random() - 0.5) * 0.5
+        });
+    }
+
+    updateHitEffects(dt) {
+        this.hitEffects = this.hitEffects.filter(eff => {
+            eff.lifetime += dt;
+            if (eff.lifetime >= eff.maxLifetime) return false;
+            const p = eff.lifetime / eff.maxLifetime;
+            eff.alpha = 1.0 - Math.pow(p, 2); // fast fade at end
+            
+            if (p < 0.2) {
+                eff.scale = 0.1 + (p / 0.2) * 0.9;
+            } else {
+                eff.scale = 1.0 + (p - 0.2) * 0.2;
+            }
+            return true;
+        });
+    }
+
+    drawHitEffects(ctx) {
+        for (const eff of this.hitEffects) {
+            ctx.save();
+            ctx.translate(eff.x, eff.y);
+            ctx.rotate(eff.rotation);
+            ctx.scale(eff.scale, eff.scale);
+            ctx.globalAlpha = eff.alpha;
+            const img = eff.isBoom ? this.boomImg : this.burstImg;
+            if (img && img.complete && img.naturalWidth > 0) {
+                const w = eff.isBoom ? 60 : 35;
+                const h = w * (img.naturalHeight / img.naturalWidth);
+                ctx.drawImage(img, -w/2, -h/2, w, h);
+            }
+            ctx.restore();
+        }
 
     updateFloatingTexts(dt) {
         this.floatingTexts = this.floatingTexts.filter(ft => {
@@ -3840,6 +3899,7 @@ class Game {
 
         // Floating texts
         this.drawFloatingTexts(ctx);
+        this.drawHitEffects(ctx);
 
         // Level Start Text
         if (this.levelStartTimer > 0) {
@@ -4518,9 +4578,19 @@ class Game {
         }
 
         // ── Below Top-left: Score & Combo ──
-        const scoreText = `${this.score} PTS`;
+        const scoreText = `${this.score}`;
         const scoreSize = h * 0.050;
-        drawText(ctx, scoreText, w * 0.03, uiY + iconSize + 28, scoreSize, rgba(255, 210, 0, 255));
+        const scoreY = uiY + iconSize + 28;
+        const scoreW = textWidth(ctx, scoreText, scoreSize);
+        drawText(ctx, scoreText, w * 0.03, scoreY, scoreSize, rgba(255, 210, 0, 255));
+        
+        // Draw PTS icon next to score
+        if (this.ptsIconImg && this.ptsIconImg.complete && this.ptsIconImg.naturalWidth > 0) {
+            const iconAspect = this.ptsIconImg.naturalWidth / this.ptsIconImg.naturalHeight;
+            const ptH = scoreSize * 0.8;
+            const ptW = ptH * iconAspect;
+            ctx.drawImage(this.ptsIconImg, w * 0.03 + scoreW + 5, scoreY - ptH + 2, ptW, ptH);
+        }
 
         if (this.combo > 1) {
             const comboText = `COMBO x${this.combo}`;
