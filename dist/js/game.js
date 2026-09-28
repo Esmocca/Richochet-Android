@@ -2391,16 +2391,16 @@ class Game {
                     const comp = this.companions[this.shopConfirmIndex];
                     this.coins -= comp.price;
                     comp.owned = true;
-                    this.saveProgress();
+                    this.saveSettings();
                 } else if (this.shopConfirmType === 'item') {
                     if (this.shopConfirmIndex === 0) {
                         this.coins -= 25;
                         this.extraLives = (this.extraLives || 0) + 1;
-                        this.saveProgress();
+                        this.saveSettings();
                     } else if (this.shopConfirmIndex === 1) {
                         this.coins -= 50;
                         this.speedsterActive = true;
-                        this.saveProgress();
+                        this.saveSettings();
                     }
                 }
                 this.shopConfirmType = null;
@@ -2508,7 +2508,7 @@ class Game {
                 this.companions.forEach(c => c.equipped = false);
                 comp.equipped = true;
                 this.audio.init(); this.audio.playBrickSound(1.3);
-                this.saveProgress();
+                this.saveSettings();
             }
         }
     }
