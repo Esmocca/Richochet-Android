@@ -1521,10 +1521,16 @@ class Game {
                 ball.y = 208;
             }
         } else {
-            // Ensure bricks are in final position
+            // Ensure bricks are in final position, with horizontal movement for Stage 3-5
+            let shiftX = 0;
+            if (this.currentLevel >= 2) {
+                const speed = 1.5 + (this.currentLevel * 0.2);
+                shiftX = Math.sin(this.elapsedTime * speed) * 35; // sway left and right
+            }
+
             for (const brick of this.bricks) {
                 brick.scale = 1;
-                brick.x = brick.targetX;
+                brick.x = brick.targetX + shiftX;
                 brick.y = brick.targetY;
             }
 
@@ -2090,13 +2096,7 @@ class Game {
     // ─── Coin Drops ──────────────────────────────────
 
     triggerSplashDamage(centerBrick, isBall) {
-        let radius = 0; // default for projectile: no splash
-
-        if (isBall) {
-            // "menghancurkan 3 blok" -> radius 1 (center + 1 left + 1 right)
-            // "menghancurkan 4 blok" -> radius 1.5
-            radius = (this.combo >= 10) ? 1.5 : 1.0;
-        }
+        let radius = 0; // default for projectile and ball: no splash
 
         const splashW = centerBrick.w * radius;
         const splashH = centerBrick.h * radius;
@@ -2148,7 +2148,7 @@ class Game {
             this.shakeIntensity = 3.5;
             this.hitLagTimer = 0.04;
 
-            this.spawnHitEffect(centerBrick.x, centerBrick.y, this.combo > 10);
+            this.spawnHitEffect(centerBrick.x, centerBrick.y, false);
 
             // Audio variant based on combo
             if (this.combo >= 3) {
