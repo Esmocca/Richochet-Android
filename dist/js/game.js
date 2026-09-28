@@ -1862,6 +1862,7 @@ class Game {
             }
             ctx.restore();
         }
+    }
 
     updateFloatingTexts(dt) {
         this.floatingTexts = this.floatingTexts.filter(ft => {
