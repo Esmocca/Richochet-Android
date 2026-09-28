@@ -113,8 +113,6 @@ class Game {
             'Pluto': document.getElementById('imgPluto'),
             'Moon': document.getElementById('imgMoon')
         };
-        this.gameplayBgImg = document.getElementById('imgGameplayBg');
-        this.bgScrollY = 0;
 
         this.audio = new AudioManager();
 
@@ -1354,7 +1352,6 @@ class Game {
         this.updateParticles(dt);
         this.updatePowerups(dt);
         if (this.state !== GameState.Paused) {
-            this.bgScrollY += 15 * dt;
             this.updateStars(dt);
         }
         if (this.state === GameState.Playing || this.state === GameState.StageClear || this.state === GameState.GameOver) {
@@ -3464,31 +3461,11 @@ class Game {
             ctx.drawImage(this.bgCanvas, 0, 0);
         } else {
             // SPACE BACKGROUND FOR GAMEPLAY
-            if (this.gameplayBgImg && this.gameplayBgImg.complete && this.gameplayBgImg.naturalHeight > 0) {
-                const aspect = this.gameplayBgImg.naturalWidth / this.gameplayBgImg.naturalHeight;
-                const drawW = w;
-                const drawH = w / aspect;
-                
-                // Use 2x height loop to mirror it seamlessly
-                this.bgScrollY = this.bgScrollY % (2 * drawH);
-                
-                // Normal
-                ctx.drawImage(this.gameplayBgImg, 0, this.bgScrollY, drawW, drawH);
-                ctx.drawImage(this.gameplayBgImg, 0, this.bgScrollY - 2 * drawH, drawW, drawH);
-                
-                // Mirrored
-                ctx.save();
-                ctx.translate(0, this.bgScrollY - drawH + drawH/2);
-                ctx.scale(1, -1);
-                ctx.drawImage(this.gameplayBgImg, 0, -drawH/2, drawW, drawH);
-                ctx.restore();
-            } else {
-                const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-                bgGrad.addColorStop(0, rgba(2, 4, 15, 255));
-                bgGrad.addColorStop(1, rgba(5, 10, 20, 255));
-                ctx.fillStyle = bgGrad;
-                ctx.fillRect(0, 0, w, h);
-            }
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+            bgGrad.addColorStop(0, rgba(2, 4, 15, 255));
+            bgGrad.addColorStop(1, rgba(5, 10, 20, 255));
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, w, h);
 
             // Draw Scrolling Planets
             this.drawPlanets(ctx, w, h);
