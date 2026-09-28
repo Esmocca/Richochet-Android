@@ -1000,29 +1000,33 @@ class Game {
     handlePauseTap(vx, vy) {
         if (this.resumeCountdown > 0) return;
         const w = this.w, h = this.h;
-        const panelW = w * 0.38;
-        const btnW = panelW * 0.82;
-        const btnH = h * 0.07;
-        const btnX = (w - btnW) / 2;
-        const positions = [0.36, 0.47, 0.58];
+        
+        const winW = w * 0.45;
+        const winH = h * 0.60;
+        const winX = (w - winW) / 2;
+        const winY = (h - winH) / 2;
+        const titleH = h * 0.08;
+        
+        const btnW = winW * 0.70;
+        const btnH = h * 0.08;
+        const btnX = winX + (winW - btnW) / 2;
+        const startY = winY + titleH + h * 0.08;
+        const gapY = h * 0.12;
 
         for (let i = 0; i < 3; i++) {
-            const btnY = h * positions[i];
+            const btnY = startY + i * gapY;
             if (vx >= btnX && vx <= btnX + btnW && vy >= btnY && vy <= btnY + btnH) {
                 this.pauseSelectedIndex = i;
                 this.audio.init(); this.audio.playPauseSound();
                 if (i === 0) {
-                    // Resume
                     this.resumeCountdown = 3.0;
                 } else if (i === 1) {
-                    // Restart
                     this.lives = 3 + (this.extraLives || 0);
                     this.score = 0;
                     this.resetBallAndPaddle(true);
                     this.initBricks();
                     this.state = GameState.Playing;
                 } else if (i === 2) {
-                    // Exit to menu
                     this.triggerStateTransition(GameState.Menu);
                 }
                 return;
@@ -3601,115 +3605,50 @@ class Game {
         }
 
         // Dim background
-        ctx.fillStyle = rgba(4, 6, 14, 195);
+        ctx.fillStyle = rgba(0, 0, 0, 150);
         ctx.fillRect(0, 0, w, h);
 
-        const panelW = w * 0.38;
-        const panelH = h * 0.54;
-        const panelX = (w - panelW) / 2;
-        const panelY = h * 0.20;
-
-        // Drop shadow for panel
-        fillRoundedRect(ctx, panelX + 6, panelY + 8, panelW, panelH, 8, rgba(0, 0, 0, 160));
-
-        // Glass panel 3D background
-        const menuGrad = ctx.createLinearGradient(0, panelY, 0, panelY + panelH);
-        menuGrad.addColorStop(0, rgba(45, 50, 60, 240));
-        menuGrad.addColorStop(1, rgba(15, 20, 25, 240));
-        fillRoundedRect(ctx, panelX, panelY, panelW, panelH, 8, menuGrad);
-
-        // Border glow
-        drawRoundedRect(ctx, panelX, panelY, panelW, panelH, 8);
-        ctx.strokeStyle = rgba(131, 137, 145, 160);
+        const winW = w * 0.45;
+        const winH = h * 0.60;
+        const winX = (w - winW) / 2;
+        const winY = (h - winH) / 2;
+        
+        ctx.fillStyle = '#dfdfdf';
+        ctx.fillRect(winX, winY, winW, winH);
+        
+        ctx.strokeStyle = '#000000';
         ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // Outer glow
-        drawRoundedRect(ctx, panelX - 3, panelY - 3, panelW + 6, panelH + 6, 10);
-        ctx.strokeStyle = rgba(131, 137, 145, 45);
-        ctx.lineWidth = 6;
-        ctx.stroke();
-
-        // Scanlines
-        ctx.save();
-        drawRoundedRect(ctx, panelX, panelY, panelW, panelH, 8);
-        ctx.clip();
-        ctx.strokeStyle = rgba(255, 255, 255, 6);
-        ctx.lineWidth = 0.5;
-        for (let sy = 0; sy < panelH; sy += 2.5) {
-            ctx.beginPath();
-            ctx.moveTo(panelX, panelY + sy);
-            ctx.lineTo(panelX + panelW, panelY + sy);
-            ctx.stroke();
-        }
-        ctx.restore();
-
-        // Title
-        const titleText = '❚❚ PAUSE MENU';
-        const titleSize = h * 0.046;
-        const tw = textWidth(ctx, titleText, titleSize);
-        drawText(ctx, titleText, (w - tw) / 2, panelY + h * 0.04, titleSize, rgba(200, 200, 210));
-
-        // Divider
-        ctx.strokeStyle = rgba(131, 137, 145, 100);
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(panelX + 20, panelY + h * 0.10);
-        ctx.lineTo(panelX + panelW - 20, panelY + h * 0.10);
-        ctx.stroke();
+        ctx.strokeRect(winX, winY, winW, winH);
+        
+        const titleH = h * 0.08;
+        ctx.fillStyle = '#0000a8';
+        ctx.fillRect(winX + 2, winY + 2, winW - 4, titleH);
+        drawText(ctx, 'PAUSE.EXE', winX + 10, winY + 12, titleH * 0.6, '#ffffff');
 
         // Menu items
         const items = ['RESUME', 'RESTART', 'EXIT'];
-        const itemSize = h * 0.034;
-        const positions = [0.36, 0.47, 0.58];
-        const btnW = panelW * 0.82;
-        const btnH = h * 0.07;
-        const btnX = (w - btnW) / 2;
-
-        const btnColors = [
-            [131, 137, 145],   // Grey for RESUME
-            [131, 137, 145],   // Grey for RESTART
-            [131, 137, 145],   // Grey for EXIT
-        ];
+        const btnW = winW * 0.70;
+        const btnH = h * 0.08;
+        const btnX = winX + (winW - btnW) / 2;
+        const startY = winY + titleH + h * 0.08;
+        const gapY = h * 0.12;
 
         for (let i = 0; i < items.length; i++) {
             const selected = this.pauseSelectedIndex === i;
-            const btnY = h * positions[i];
-            const bc = btnColors[i];
+            const btnY = startY + i * gapY;
 
-            // Glass button background
-            fillRoundedRect(ctx, btnX, btnY, btnW, btnH, 4,
-                rgba(bc[0], bc[1], bc[2], selected ? 45 : 18));
-
-            // Button border
-            drawRoundedRect(ctx, btnX, btnY, btnW, btnH, 4);
-            ctx.strokeStyle = rgba(bc[0], bc[1], bc[2], selected ? 220 : 70);
-            ctx.lineWidth = selected ? 2 : 1;
-            ctx.stroke();
-
+            this.drawWin3Button(ctx, btnX, btnY, btnW, btnH);
             if (selected) {
-                drawRoundedRect(ctx, btnX - 2, btnY - 2, btnW + 4, btnH + 4, 6);
-                ctx.strokeStyle = rgba(bc[0], bc[1], bc[2], 40);
-                ctx.lineWidth = 2;
-                ctx.stroke();
+                ctx.strokeStyle = '#000000';
+                ctx.setLineDash([2, 2]);
+                ctx.strokeRect(btnX + 4, btnY + 4, btnW - 8, btnH - 8);
+                ctx.setLineDash([]);
             }
 
             const label = items[i];
-            const lw = textWidth(ctx, label, itemSize);
-            const color = selected ? rgba(255, 255, 255) : rgba(bc[0], bc[1], bc[2], 180);
-            drawText(ctx, label, (w - lw) / 2, btnY + (btnH - itemSize) / 2, itemSize, color);
-
-            if (selected) {
-                const arrowPulse = Math.sin(this.menuAnimTimer * 6) * 3;
-                drawText(ctx, '▶', btnX + 12 + arrowPulse, btnY + (btnH - itemSize) / 2, itemSize, rgba(bc[0], bc[1], bc[2]));
-            }
+            const lw = textWidth(ctx, label, btnH * 0.4);
+            drawText(ctx, label, (w - lw) / 2, btnY + (btnH - btnH * 0.4) / 2 + 2, btnH * 0.4, '#000000');
         }
-
-        // Help text
-        const helpSize = h * 0.022;
-        const helpText = '[ Tap button or press ESC to resume ]';
-        const hw = textWidth(ctx, helpText, helpSize);
-        drawText(ctx, helpText, (w - hw) / 2, panelY + panelH - h * 0.05, helpSize, rgba(140, 140, 140));
     }
 
     // ─── Options ──────────────────────────────────────
