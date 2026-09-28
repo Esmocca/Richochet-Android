@@ -434,9 +434,7 @@ class Game {
 
     initBricks() {
         this.bricks = [];
-        const patterns = [
-    {
-                                                data: [
+                        data: [
             [0, "#78808f", "#7f8797", "#949caa", "#b4b6c0", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "#aaadb6", "#a0a7b2", "#757b8d", "#a4aab5", 0],
             ["#8690a3", "#152246", "#515b74", "#0a163c", "#050e35", "#383a4a", "#adadb0", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "#96979a", "#2c2f43", "#010934", "#232e4f", "#4b526e", "#182449", "#c7cdd5"],
             ["#69738e", "#485470", "#1b2444", "#0b163b", "#0a0f32", "#1a1e37", "#575d69", "#b3b5bc", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "#9fa2aa", "#3e4451", "#090e2b", "#0f173e", "#040d33", "#393e5a", "#404b6c", "#97a2b6"],
@@ -1561,10 +1559,11 @@ class Game {
             }
 
             // Remove dead balls
+            const prevBallsLength = this.balls.length;
             this.balls = this.balls.filter(b => b.alive);
             
-            // Reset MULTI powerup limit if we're back down to a single ball
-            if (this.balls.length <= 1) {
+            // Reset MULTI powerup limit if we dropped back down to a single ball
+            if (prevBallsLength > 1 && this.balls.length <= 1) {
                 this.multiSpawnCount = 0;
             }
 
@@ -1611,6 +1610,29 @@ class Game {
         }
     }
 
+    increaseGameSpeed(ball) {
+        if (this.currentSpeed < this.maxSpeed) {
+            this.currentSpeed *= 1.025;
+            this.speedMultiplier = this.currentSpeed / this.baseSpeed;
+            if (ball) {
+                const mag = Math.sqrt(ball.vx ** 2 + ball.vy ** 2);
+                if (mag > 0) {
+                    ball.vx = (ball.vx / mag) * this.currentSpeed;
+                    ball.vy = (ball.vy / mag) * this.currentSpeed;
+                }
+            } else {
+                for (let b of this.balls) {
+                    if (!b.alive) continue;
+                    const mag = Math.sqrt(b.vx ** 2 + b.vy ** 2);
+                    if (mag > 0) {
+                        b.vx = (b.vx / mag) * this.currentSpeed;
+                        b.vy = (b.vy / mag) * this.currentSpeed;
+                    }
+                }
+            }
+        }
+    }
+
     updateBall(ball, dt) {
         let moveDt = dt;
         if (this.powerupActive.slow > 0) moveDt *= 0.6;
@@ -1654,19 +1676,6 @@ class Game {
             return;
         }
 
-        // Speed increase helper
-        const increaseSpeed = () => {
-            if (this.currentSpeed < this.maxSpeed) {
-                this.currentSpeed *= 1.025;
-                this.speedMultiplier = this.currentSpeed / this.baseSpeed;
-                const mag = Math.sqrt(ball.vx ** 2 + ball.vy ** 2);
-                if (mag > 0) {
-                    ball.vx = (ball.vx / mag) * this.currentSpeed;
-                    ball.vy = (ball.vy / mag) * this.currentSpeed;
-                }
-            }
-        };
-
         // Paddle collision
         const ballCX = ball.x + ball.radius;
         const ballCY = ball.y + ball.radius;
@@ -1686,7 +1695,7 @@ class Game {
             ball.vx = Math.sin(angle) * speed;
             ball.vy = -Math.cos(angle) * speed;
 
-            increaseSpeed();
+            this.increaseGameSpeed(ball);
             this.paddleBounceTimer = 0;
             this.combo = 0; // Reset combo on paddle hit
             this.audio.init(); this.audio.playPaddleBounce();
@@ -2173,7 +2182,7 @@ class Game {
             }
 
             if (isBall) {
-                increaseSpeed();
+                this.increaseGameSpeed();
             }
 
             if (this.bricks.every(b => b.destroyed)) {
