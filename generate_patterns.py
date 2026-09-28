@@ -52,23 +52,23 @@ patterns = []
 
 # Stage 1: Lily
 lily_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790573726237.png"
-patterns.append(img_to_pattern(lily_path, target_width=20))
+patterns.append(img_to_pattern(lily_path, target_width=20, max_height=18))
 
 # Stage 2: Butterfly
-butterfly_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790575365584.png"
-patterns.append(img_to_pattern(butterfly_path, target_width=22))
+butterfly_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790603535612.png"
+patterns.append(img_to_pattern(butterfly_path, target_width=22, max_height=18))
 
 # Stage 3: Bat
 bat_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790577452817.png"
-patterns.append(img_to_pattern(bat_path, target_width=24))
+patterns.append(img_to_pattern(bat_path, target_width=24, max_height=18))
 
 # Stage 4: Shark
 shark_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790577713177.png"
-patterns.append(img_to_pattern(shark_path, target_width=24))
+patterns.append(img_to_pattern(shark_path, target_width=24, max_height=18))
 
 # Stage 5: Jellyfish
 jellyfish_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790577865963.png"
-patterns.append(img_to_pattern(jellyfish_path, target_width=24, max_height=20))
+patterns.append(img_to_pattern(jellyfish_path, target_width=24, max_height=18))
 
 with open("patterns.json", "w") as f:
     json.dump(patterns, f)
