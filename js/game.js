@@ -2417,21 +2417,21 @@ class Game {
         
         // Check Close button (X)
         const btnSize = titleH - 8;
-        const btnX = winX + winW - 4 - btnSize - 4;
-        const btnY = winY + 8;
+        const btnX = winX + winW - 6 - btnSize;
+        const btnY = winY + 6;
         if (vx >= btnX && vx <= btnX + btnSize && vy >= btnY && vy <= btnY + btnSize) {
             this.triggerStateTransition(GameState.Menu);
             this.audio.init(); this.audio.playHitWallSound();
             return;
         }
 
-        const contentX = winX + 10;
-        const contentY = winY + titleH + 10;
-        const contentW = winW - 20;
+        const contentX = winX + 6;
+        const contentY = winY + titleH + 6;
+        const contentW = winW - 12;
         const scrollOffset = this.shopScrollY || 0;
         let drawY = contentY + 10 - scrollOffset;
         
-        const secSize = h * 0.04;
+        const secSize = h * 0.035;
         drawY += secSize + 16;
         
         const cardW = w * 0.28;
@@ -2444,7 +2444,7 @@ class Game {
             const btnW = cardW * 0.8;
             const btnH = h * 0.06;
             const bX = cx + (cardW - btnW)/2;
-            const bYPos = cy + cardH * 0.78;
+            const bYPos = cy + cardH * 0.82;
 
             if (vx >= bX && vx <= bX + btnW && vy >= bYPos && vy <= bYPos + btnH) {
                 this.shopSelectedIndex = i;
@@ -2462,7 +2462,7 @@ class Game {
             const btnW = cardW * 0.8;
             const btnH = h * 0.06;
             const bX = ix + (cardW - btnW)/2;
-            const bYPos = iy + cardH * 0.78;
+            const bYPos = iy + cardH * 0.82;
             
             if (vx >= bX && vx <= bX + btnW && vy >= bYPos && vy <= bYPos + btnH) {
                 if (i === 0) { // Revive
@@ -2532,10 +2532,18 @@ class Game {
         ctx.stroke();
     }
 
+    // Win3.1 flat style button helper
+    drawWin3Button(ctx, x, y, w, h) {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = '#c0c0c0';
+        ctx.fillRect(x+2, y+2, w-4, h-4);
+    }
+
     drawShop(ctx, w, h) {
         if (!this.shopScrollY) this.shopScrollY = 0;
 
-        // Desktop background
+        // Desktop background (Teal)
         ctx.fillStyle = '#008080';
         ctx.fillRect(0, 0, w, h);
         
@@ -2544,58 +2552,66 @@ class Game {
         const winW = w * 0.96;
         const winH = h * 0.96;
         
-        // Main Window
-        this.drawOSRect(ctx, winX, winY, winW, winH, false, '#c0c0c0');
+        // Main Window: Windows 3.1 style (Gray thick border, white inner)
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(winX, winY, winW, winH);
+        ctx.fillStyle = '#c0c0c0';
+        ctx.fillRect(winX + 2, winY + 2, winW - 4, winH - 4);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(winX + 6, winY + 6, winW - 12, winH - 12);
         
-        // Title bar
+        // Title bar (Deep Blue)
         const titleH = h * 0.08;
-        ctx.fillStyle = '#0000aa';
-        ctx.fillRect(winX + 4, winY + 4, winW - 8, titleH);
+        ctx.fillStyle = '#0000a8';
+        ctx.fillRect(winX + 6, winY + 6, winW - 12, titleH);
         
-        drawText(ctx, 'Shop Merchant.exe', winX + 12, winY + 12, h * 0.045, '#ffffff');
+        drawText(ctx, 'SHOP MERCHANT.EXE', winX + 16, winY + 14, h * 0.045, '#ffffff');
         
-        // Close Button
+        // Close Button [X]
         const btnSize = titleH - 8;
-        const btnX = winX + winW - 4 - btnSize - 4;
+        const btnX = winX + winW - 6 - btnSize;
         const btnY = winY + 8;
-        this.drawOSRect(ctx, btnX, btnY, btnSize, btnSize, false, '#c0c0c0');
+        this.drawWin3Button(ctx, btnX, btnY, btnSize, btnSize);
         drawText(ctx, 'X', btnX + btnSize*0.25, btnY + btnSize*0.1, btnSize*0.7, '#000000');
         
-        // Coin balance (Sunken text box)
-        const coinBalText = `Coins: ${this.coins}  `;
+        // Coin balance (Simple white box with black text)
+        const coinBalText = `COINS: ${this.coins}  `;
         const coinSize = h * 0.04;
         const coinW = textWidth(ctx, coinBalText, coinSize);
         const coinBoxW = coinW + 40;
         const coinBoxH = h * 0.06;
-        const coinBoxX = btnX - coinBoxW - 20;
-        this.drawOSRect(ctx, coinBoxX, winY + 10, coinBoxW, coinBoxH, true, '#ffffff');
-        drawText(ctx, coinBalText, coinBoxX + 10, winY + 16, coinSize, '#000000');
+        const coinBoxX = btnX - coinBoxW - 10;
+        
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(coinBoxX, winY + 12, coinBoxW, coinBoxH);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(coinBoxX + 2, winY + 14, coinBoxW - 4, coinBoxH - 4);
+        
+        drawText(ctx, coinBalText, coinBoxX + 10, winY + 18, coinSize, '#000000');
         
         // Coin icon
         ctx.beginPath();
-        ctx.arc(coinBoxX + coinBoxW - 20, winY + 10 + coinBoxH/2, h * 0.015, 0, Math.PI * 2);
+        ctx.arc(coinBoxX + coinBoxW - 20, winY + 12 + coinBoxH/2, h * 0.015, 0, Math.PI * 2);
         ctx.fillStyle = rgba(255, 215, 0); ctx.fill();
-        ctx.strokeStyle = rgba(0, 0, 0, 180); ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.strokeStyle = '#000000'; ctx.lineWidth = 1.5; ctx.stroke();
 
-        // Content Area (Sunken)
-        const contentX = winX + 10;
-        const contentY = winY + titleH + 10;
-        const contentW = winW - 20;
-        const contentH = winH - titleH - 20;
-        
-        this.drawOSRect(ctx, contentX, contentY, contentW, contentH, true, '#ffffff');
+        // Content Area (White background)
+        const contentX = winX + 8;
+        const contentY = winY + titleH + 8;
+        const contentW = winW - 16;
+        const contentH = winH - titleH - 16;
         
         // --- Scroll Area ---
         ctx.save();
         ctx.beginPath();
-        ctx.rect(contentX + 2, contentY + 2, contentW - 4, contentH - 4);
+        ctx.rect(contentX, contentY, contentW, contentH);
         ctx.clip();
         
         const scrollOffset = this.shopScrollY || 0;
         let drawY = contentY + 10 - scrollOffset;
         
-        const secSize = h * 0.04;
-        drawText(ctx, 'COMPANION:', contentX + 16, drawY, secSize, '#000080');
+        const secSize = h * 0.035;
+        drawText(ctx, 'COMPANION:', contentX + 10, drawY, secSize, '#000000');
         drawY += secSize + 16;
         
         const cardW = w * 0.28;
@@ -2607,21 +2623,19 @@ class Game {
             const cx = contentX + cardGap + i * (cardW + cardGap);
             const cy = drawY;
             
-            // Inner OS Window for Card
-            this.drawOSRect(ctx, cx, cy, cardW, cardH, false, '#c0c0c0');
-            
-            // Inner Window Title
-            const cTitleH = h * 0.04;
-            ctx.fillStyle = '#000080';
-            ctx.fillRect(cx + 4, cy + 4, cardW - 8, cTitleH);
-            const nSize = h * 0.024;
-            const nW = textWidth(ctx, comp.name, nSize);
-            drawText(ctx, comp.name, cx + (cardW - nW)/2, cy + 8, nSize, '#ffffff');
-            
-            // Content bg
+            // Child Window (Card)
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(cx, cy, cardW, cardH);
             ctx.fillStyle = '#ffffff';
-            ctx.fillRect(cx + 4, cy + 4 + cTitleH, cardW - 8, cardH - 8 - cTitleH);
-            this.drawOSRect(ctx, cx + 4, cy + 4 + cTitleH, cardW - 8, cardH - 8 - cTitleH, true, 'transparent');
+            ctx.fillRect(cx + 2, cy + 2, cardW - 4, cardH - 4);
+            
+            // Child Window Title
+            const cTitleH = h * 0.04;
+            ctx.fillStyle = '#0000a8';
+            ctx.fillRect(cx + 2, cy + 2, cardW - 4, cTitleH);
+            const nSize = h * 0.024;
+            const nW = textWidth(ctx, comp.name.toUpperCase(), nSize);
+            drawText(ctx, comp.name.toUpperCase(), cx + (cardW - nW)/2, cy + 8, nSize, '#ffffff');
             
             // Diamond Icon
             const iSz = cardH * 0.15;
@@ -2631,21 +2645,21 @@ class Game {
             ctx.moveTo(0, -iSz); ctx.lineTo(iSz*0.7, 0); ctx.lineTo(0, iSz); ctx.lineTo(-iSz*0.7, 0);
             ctx.fillStyle = `rgb(${comp.color[0]}, ${comp.color[1]}, ${comp.color[2]})`;
             ctx.fill();
-            ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.stroke();
             ctx.restore();
             
             // Desc
             const dSize = h * 0.022;
-            const dW = textWidth(ctx, comp.desc, dSize);
-            drawText(ctx, comp.desc, cx + (cardW - dW)/2, cy + cTitleH + cardH * 0.45, dSize, '#404040');
+            const dW = textWidth(ctx, comp.desc.toUpperCase(), dSize);
+            drawText(ctx, comp.desc.toUpperCase(), cx + (cardW - dW)/2, cy + cTitleH + cardH * 0.45, dSize, '#404040');
             
-            // Buy/Equip Button
+            // Button
             const btnW = cardW * 0.8;
             const btnH = h * 0.06;
-            const btnX = cx + (cardW - btnW)/2;
-            const btnY = cy + cardH * 0.78;
+            const bX = cx + (cardW - btnW)/2;
+            const bYPos = cy + cardH * 0.82;
             
-            this.drawOSRect(ctx, btnX, btnY, btnW, btnH, false, '#c0c0c0');
+            this.drawWin3Button(ctx, bX, bYPos, btnW, btnH);
             
             let btnText = '';
             if (comp.owned) {
@@ -2654,17 +2668,17 @@ class Game {
                 btnText = `$${comp.price} BUY`;
             }
             const bTW = textWidth(ctx, btnText, dSize);
-            drawText(ctx, btnText, btnX + (btnW - bTW)/2, btnY + (btnH - dSize)/2, dSize, '#000000');
+            drawText(ctx, btnText, bX + (btnW - bTW)/2, bYPos + (btnH - dSize)/2 + 2, dSize, '#000000');
         }
         
         drawY += cardH + 30;
         
-        drawText(ctx, 'ITEMS:', contentX + 16, drawY, secSize, '#000000');
+        drawText(ctx, 'ITEMS:', contentX + 10, drawY, secSize, '#000000');
         drawY += secSize + 16;
         
         const shopItems = [
-            { id: 'revive', name: 'REVIVE', desc: '+1 Life', price: 25, icon: '\u2665', color: [255, 80, 120], available: true },
-            { id: 'speedster', name: 'SPEEDSTER', desc: '+Speed', price: 50, icon: '\u00BB', color: [0, 255, 255], available: true },
+            { id: 'revive', name: 'REVIVE', desc: '+1 LIFE', price: 25, icon: '\\u2665', color: [255, 80, 120], available: true },
+            { id: 'speedster', name: 'SPEEDSTER', desc: '+SPEED', price: 50, icon: '\\u00BB', color: [0, 255, 255], available: true },
             { id: 'soon1', name: 'COMING', desc: 'SOON', price: null, icon: '?', color: [100, 100, 130], available: false },
         ];
         
@@ -2673,21 +2687,19 @@ class Game {
             const ix = contentX + cardGap + i * (cardW + cardGap);
             const iy = drawY;
             
-            // Inner OS Window for Card
-            this.drawOSRect(ctx, ix, iy, cardW, cardH, false, '#c0c0c0');
-            
-            // Inner Window Title
-            const cTitleH = h * 0.04;
-            ctx.fillStyle = '#000080';
-            ctx.fillRect(ix + 4, iy + 4, cardW - 8, cTitleH);
-            const nSize = h * 0.024;
-            const nW = textWidth(ctx, item.name, nSize);
-            drawText(ctx, item.name, ix + (cardW - nW)/2, iy + 8, nSize, '#ffffff');
-            
-            // Content bg
+            // Child Window (Card)
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(ix, iy, cardW, cardH);
             ctx.fillStyle = '#ffffff';
-            ctx.fillRect(ix + 4, iy + 4 + cTitleH, cardW - 8, cardH - 8 - cTitleH);
-            this.drawOSRect(ctx, ix + 4, iy + 4 + cTitleH, cardW - 8, cardH - 8 - cTitleH, true, 'transparent');
+            ctx.fillRect(ix + 2, iy + 2, cardW - 4, cardH - 4);
+            
+            // Child Window Title
+            const cTitleH = h * 0.04;
+            ctx.fillStyle = '#0000a8';
+            ctx.fillRect(ix + 2, iy + 2, cardW - 4, cTitleH);
+            const nSize = h * 0.024;
+            const nW = textWidth(ctx, item.name.toUpperCase(), nSize);
+            drawText(ctx, item.name.toUpperCase(), ix + (cardW - nW)/2, iy + 8, nSize, '#ffffff');
             
             // Icon
             const iSize = h * 0.07;
@@ -2696,16 +2708,16 @@ class Game {
             
             // Desc
             const dSize = h * 0.022;
-            const dW = textWidth(ctx, item.desc, dSize);
-            drawText(ctx, item.desc, ix + (cardW - dW)/2, iy + cTitleH + cardH * 0.45, dSize, '#404040');
+            const dW = textWidth(ctx, item.desc.toUpperCase(), dSize);
+            drawText(ctx, item.desc.toUpperCase(), ix + (cardW - dW)/2, iy + cTitleH + cardH * 0.45, dSize, '#404040');
             
             // Button
             const btnW = cardW * 0.8;
             const btnH = h * 0.06;
-            const btnX = ix + (cardW - btnW)/2;
-            const btnY = iy + cardH * 0.78;
+            const bX = ix + (cardW - btnW)/2;
+            const bYPos = iy + cardH * 0.82;
             
-            this.drawOSRect(ctx, btnX, btnY, btnW, btnH, false, '#c0c0c0');
+            this.drawWin3Button(ctx, bX, bYPos, btnW, btnH);
             
             let btnText = '';
             if (item.available) {
@@ -2723,7 +2735,7 @@ class Game {
             }
             
             const bTW = textWidth(ctx, btnText, dSize);
-            drawText(ctx, btnText, btnX + (btnW - bTW)/2, btnY + (btnH - dSize)/2, dSize, '#000000');
+            drawText(ctx, btnText, bX + (btnW - bTW)/2, bYPos + (btnH - dSize)/2 + 2, dSize, '#000000');
         }
         
         drawY += cardH + 20;
@@ -2733,16 +2745,18 @@ class Game {
         
         // Scrollbar Track
         const sbW = 24;
-        const sbX = contentX + contentW - sbW - 2;
-        const sbY = contentY + 2;
-        const sbH = contentH - 4;
-        this.drawOSRect(ctx, sbX, sbY, sbW, sbH, true, '#dfdfdf');
+        const sbX = contentX + contentW - sbW;
+        const sbY = contentY;
+        const sbH = contentH;
+        ctx.fillStyle = '#dfdfdf';
+        ctx.fillRect(sbX, sbY, sbW, sbH);
         
         // Scroll thumb
         if (this.shopContentH > contentH) {
             const thumbH = Math.max(30, (contentH / this.shopContentH) * sbH);
             const thumbY = sbY + (scrollOffset / (this.shopContentH - contentH)) * (sbH - thumbH);
-            this.drawOSRect(ctx, sbX + 2, thumbY, sbW - 4, thumbH, false, '#c0c0c0');
+            ctx.fillStyle = '#c0c0c0';
+            ctx.fillRect(sbX, thumbY, sbW, thumbH);
         }
         
         // Cello Helper (Popup)
@@ -2760,34 +2774,39 @@ class Game {
             const cx = (w - cw)/2;
             const cy = (h - ch)/2;
             
-            this.drawOSRect(ctx, cx, cy, cw, ch, false, '#c0c0c0');
-            ctx.fillStyle = '#000080';
-            ctx.fillRect(cx + 4, cy + 4, cw - 8, titleH);
-            drawText(ctx, 'Confirm.exe', cx + 12, cy + 12, h * 0.045, '#ffffff');
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(cx, cy, cw, ch);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx+2, cy+2, cw-4, ch-4);
             
-            const q = 'Do you want to purchase this?';
-            const qS = h * 0.035;
+            ctx.fillStyle = '#0000a8';
+            ctx.fillRect(cx + 2, cy + 2, cw - 4, titleH);
+            drawText(ctx, 'CONFIRM.EXE', cx + 12, cy + 12, h * 0.045, '#ffffff');
+            
+            const q = 'DO YOU WANT TO PURCHASE THIS?';
+            const qS = h * 0.025;
             const qW = textWidth(ctx, q, qS);
             drawText(ctx, q, cx + (cw - qW)/2, cy + ch*0.4, qS, '#000000');
             
             // Buttons
             const cBtnW = cw * 0.3;
             const cBtnH = h * 0.08;
+            
             // CANCEL (Left)
-            this.drawOSRect(ctx, cx + cw*0.15, cy + ch*0.65, cBtnW, cBtnH, false, '#c0c0c0');
-            drawText(ctx, 'CANCEL', cx + cw*0.15 + cBtnW*0.15, cy + ch*0.65 + cBtnH*0.2, h*0.035, '#000000');
+            this.drawWin3Button(ctx, cx + cw*0.15, cy + ch*0.65, cBtnW, cBtnH);
+            drawText(ctx, 'CANCEL', cx + cw*0.15 + cBtnW*0.15, cy + ch*0.65 + cBtnH*0.2 + 2, h*0.035, '#000000');
             // BUY (Right)
-            this.drawOSRect(ctx, cx + cw*0.55, cy + ch*0.65, cBtnW, cBtnH, false, '#c0c0c0');
-            drawText(ctx, 'BUY', cx + cw*0.55 + cBtnW*0.3, cy + ch*0.65 + cBtnH*0.2, h*0.035, '#000000');
+            this.drawWin3Button(ctx, cx + cw*0.55, cy + ch*0.65, cBtnW, cBtnH);
+            drawText(ctx, 'BUY', cx + cw*0.55 + cBtnW*0.3, cy + ch*0.65 + cBtnH*0.2 + 2, h*0.035, '#000000');
         }
     }
 
     drawCelloAssistant(ctx, w, h) {
         const dialogs = [
-            'Hi! Welcome to the shop!',
-            'Buy Companions to help\ndestroy blocks!',
-            'Collect coins to buy them.\nLet us go shopping!',
-            'Any help?'
+            'HI! WELCOME TO THE SHOP!',
+            'BUY COMPANIONS TO HELP\\nDESTROY BLOCKS!',
+            'COLLECT COINS TO BUY THEM.\\nLET US GO SHOPPING!',
+            'ANY HELP?'
         ];
         const step = Math.min(this.shopAssistantStep, dialogs.length - 1);
         const msg = dialogs[step];
@@ -2798,25 +2817,24 @@ class Game {
         const cx = w * 0.65;
         const cy = h * 0.75;
         
-        this.drawOSRect(ctx, cx, cy, cw, ch, false, '#c0c0c0');
-        const titleH = h * 0.05;
-        ctx.fillStyle = '#000080';
-        ctx.fillRect(cx + 4, cy + 4, cw - 8, titleH);
-        drawText(ctx, 'CELLO.exe', cx + 10, cy + 8, h * 0.03, '#ffffff');
-        
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(cx, cy, cw, ch);
         ctx.fillStyle = '#ffffff';
-        const textH = ch - titleH - 8;
-        ctx.fillRect(cx + 4, cy + titleH + 4, cw - 8, textH);
-        this.drawOSRect(ctx, cx + 4, cy + titleH + 4, cw - 8, textH, true, 'transparent');
+        ctx.fillRect(cx+2, cy+2, cw-4, ch-4);
+        
+        const titleH = h * 0.05;
+        ctx.fillStyle = '#0000a8';
+        ctx.fillRect(cx + 2, cy + 2, cw - 4, titleH);
+        drawText(ctx, 'CELLO.EXE', cx + 10, cy + 6, h * 0.03, '#ffffff');
         
         // Simple ASCII face
         ctx.fillStyle = '#000000';
         ctx.font = `bold ${h * 0.025}px monospace`;
         ctx.fillText('(o.o)', cx + 12, cy + titleH + 30);
         
-        ctx.font = `${h * 0.02}px sans-serif`;
+        ctx.font = `${h * 0.018}px sans-serif`;
         // Draw dialog
-        const lines = msg.split('\n');
+        const lines = msg.split('\\n');
         let ty = cy + titleH + 25;
         for(let li = 0; li < lines.length; li++) {
             ctx.fillText(lines[li], cx + 70, ty);
