@@ -99,12 +99,12 @@ class Game {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
-        
+
         // Static background cache to eliminate 3D rendering heat
         this.bgCanvas = document.createElement('canvas');
         this.bgCtx = this.bgCanvas.getContext('2d', { alpha: false });
         this.bgPrerendered = false;
-        
+
         this.audio = new AudioManager();
 
         this.state = GameState.Menu;
@@ -187,6 +187,7 @@ class Game {
         // Starfield (parallax layers)
         this.starLayers = [];
         this.initStars();
+        this.initPlanets();
 
         // Score breakdown for end screens
         this.scoreBreakdown = { base: 0, combo: 0, time: 0, stage: 0, total: 0 };
@@ -353,7 +354,7 @@ class Game {
 
         if (!isFinite(this.gameScaleX) || this.gameScaleX <= 0) this.gameScaleX = 1;
         if (!isFinite(this.gameScaleY) || this.gameScaleY <= 0) this.gameScaleY = 1;
-        
+
         // Force background to re-render to new size
         this.bgPrerendered = false;
     }
@@ -611,6 +612,91 @@ class Game {
                 ctx.fillStyle = `rgba(255, 255, 255, ${twinkleAlpha})`;
                 ctx.fillRect(px, s.y, s.size, s.size);
             }
+        }
+    }
+
+    initPlanets() {
+        this.planets = [];
+        // Spawn a few initial planets randomly on screen
+        for (let i = 0; i < 3; i++) {
+            this.planets.push(this.spawnPlanet(true));
+        }
+    }
+
+    spawnPlanet(randomY = false) {
+        const types = ['Saturn', 'Jupiter', 'Mars', 'Pluto', 'Moon'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        
+        let radius = 20 + Math.random() * 30;
+        if (type === 'Jupiter') radius = 60 + Math.random() * 40;
+        if (type === 'Pluto') radius = 10 + Math.random() * 10;
+        
+        // Pick a random X somewhere across the full width
+        const x = Math.random() * (this.w || 854);
+        const y = randomY ? Math.random() * (this.h || 480) : -radius * 2 - Math.random() * 200;
+        
+        const colors = {
+            'Saturn': [238, 216, 174],
+            'Jupiter': [198, 148, 116],
+            'Mars': [193, 68, 14],
+            'Pluto': [140, 150, 160],
+            'Moon': [200, 200, 200]
+        };
+        
+        return {
+            x: x,
+            y: y,
+            radius: radius,
+            type: type,
+            speed: 5 + Math.random() * 15, // Moves down slowly like rain
+            color: colors[type] || [255, 255, 255],
+            ringAngle: Math.random() * Math.PI
+        };
+    }
+
+    updatePlanets(dt) {
+        for (let i = 0; i < this.planets.length; i++) {
+            const p = this.planets[i];
+            p.y += p.speed * dt;
+            if (p.y - p.radius * 2 > (this.h || 480)) {
+                this.planets[i] = this.spawnPlanet(false);
+            }
+        }
+    }
+
+    drawPlanets(ctx, w, h) {
+        for (const p of this.planets) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            
+            // Draw Planet Body
+            const grad = ctx.createRadialGradient(-p.radius*0.3, -p.radius*0.3, 0, 0, 0, p.radius);
+            grad.addColorStop(0, rgba(p.color[0], p.color[1], p.color[2], 255));
+            grad.addColorStop(1, rgba(p.color[0]*0.2, p.color[1]*0.2, p.color[2]*0.2, 255));
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+            
+            // Draw Saturn Ring
+            if (p.type === 'Saturn') {
+                ctx.rotate(p.ringAngle);
+                ctx.beginPath();
+                ctx.ellipse(0, 0, p.radius * 2.2, p.radius * 0.4, 0, 0, Math.PI * 2);
+                
+                const ringGrad = ctx.createLinearGradient(-p.radius*2.2, 0, p.radius*2.2, 0);
+                ringGrad.addColorStop(0, rgba(200, 180, 150, 0));
+                ringGrad.addColorStop(0.2, rgba(220, 200, 170, 200));
+                ringGrad.addColorStop(0.8, rgba(220, 200, 170, 200));
+                ringGrad.addColorStop(1, rgba(200, 180, 150, 0));
+                
+                ctx.strokeStyle = ringGrad;
+                ctx.lineWidth = p.radius * 0.15;
+                ctx.stroke();
+            }
+            
+            ctx.restore();
         }
     }
 
@@ -1233,6 +1319,9 @@ class Game {
         this.updateParticles(dt);
         this.updatePowerups(dt);
         this.updateStars(dt);
+        if (this.state === GameState.Playing || this.state === GameState.Paused || this.state === GameState.StageClear || this.state === GameState.GameOver) {
+            this.updatePlanets(dt);
+        }
         this.updateFloatingTexts(dt);
         this.updateConfetti(dt);
         this.updateCoinDrops(dt);
@@ -3306,25 +3395,41 @@ class Game {
         ctx.fillRect(-sx, -sy, w, h);
 
         // ── FULL SCREEN BACKGROUND ──
-        if (!this.bgPrerendered || this.bgCanvas.width !== w || this.bgCanvas.height !== h) {
-            this.bgCanvas.width = w;
-            this.bgCanvas.height = h;
-            this.bgCtx.clearRect(0, 0, w, h);
-            
-            // Draw to the cache ONCE
-            this.drawStars(this.bgCtx, w, h);
-            
-            // Lock speed variable temporarily so the static grid always looks nice
-            const originalSpeed = this.backgroundSpeed;
-            this.backgroundSpeed = 0.5; // Always draw perfectly aligned 
-            this.drawCyberGrid(this.bgCtx, w, h);
-            this.backgroundSpeed = originalSpeed;
-            
-            this.bgPrerendered = true;
-        }
+        const isMenu = this.state === GameState.Menu || this.state === GameState.Options || this.state === GameState.Shop;
+        
+        if (isMenu) {
+            if (!this.bgPrerendered || this.bgCanvas.width !== w || this.bgCanvas.height !== h) {
+                this.bgCanvas.width = w;
+                this.bgCanvas.height = h;
+                this.bgCtx.clearRect(0, 0, w, h);
 
-        // Draw the cached background image (0 math operations!)
-        ctx.drawImage(this.bgCanvas, 0, 0);
+                // Draw Mountain Grid (which draws its own bgGrad)
+                const originalSpeed = this.backgroundSpeed;
+                this.backgroundSpeed = 0.5; // Always draw perfectly aligned 
+                this.drawCyberGrid(this.bgCtx, w, h);
+                this.backgroundSpeed = originalSpeed;
+                
+                // Draw stars OVER the sky part of the mountains
+                this.drawStars(this.bgCtx);
+
+                this.bgPrerendered = true;
+            }
+            // Draw the cached background image
+            ctx.drawImage(this.bgCanvas, 0, 0);
+        } else {
+            // SPACE BACKGROUND FOR GAMEPLAY
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+            bgGrad.addColorStop(0, rgba(2, 4, 15, 255));
+            bgGrad.addColorStop(1, rgba(5, 10, 20, 255));
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, w, h);
+            
+            // Draw Scrolling Planets
+            this.drawPlanets(ctx, w, h);
+
+            // Draw Dynamic Stars
+            this.drawStars(ctx);
+        }
 
         // ── GAME VIEW (320×240 virtual) ──
         ctx.save();
