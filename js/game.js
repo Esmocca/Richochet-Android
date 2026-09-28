@@ -2420,7 +2420,7 @@ class Game {
         const btnX = winX + winW - 4 - btnSize - 4;
         const btnY = winY + 8;
         if (vx >= btnX && vx <= btnX + btnSize && vy >= btnY && vy <= btnY + btnSize) {
-            this.isExitingShop = true;
+            this.triggerStateTransition(GameState.Menu);
             this.audio.init(); this.audio.playHitWallSound();
             return;
         }
