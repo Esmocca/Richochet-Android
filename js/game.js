@@ -4603,13 +4603,13 @@ class Game {
         const timerBoxH = iconSize * 0.8;
         
         // Hourglass dimensions
-        const hgH = timerBoxH * 0.7;
+        const hgH = timerBoxH * 0.9; // Scaled up to match box height
         const hgAspect = (this.hourglassImg && this.hourglassImg.complete && this.hourglassImg.naturalWidth > 0) 
             ? (this.hourglassImg.naturalWidth / this.hourglassImg.naturalHeight) : 1;
         const hgW = hgH * hgAspect;
         
         const timerX = w * 0.97 - timerBoxW;
-        const hgX = timerX - hgW - 10;
+        const hgX = timerX - hgW - 8; // Spaced exactly 8px from box
         const timerY = uiY;
 
         // Draw Hourglass icon
