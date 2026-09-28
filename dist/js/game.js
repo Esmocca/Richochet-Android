@@ -696,19 +696,8 @@ class Game {
                 const drawW = p.radius * 2 * aspect;
                 const drawH = p.radius * 2;
                 
-                // Block out the stars behind the planet
+                // Images are now transparent PNGs, so we can just draw them normally!
                 ctx.globalCompositeOperation = 'source-over';
-                ctx.beginPath();
-                if (p.type === 'Saturn') {
-                    ctx.ellipse(0, 0, drawW/2 * 0.9, drawH/2 * 0.9, 0, 0, Math.PI*2);
-                } else {
-                    ctx.arc(0, 0, p.radius * 0.95, 0, Math.PI*2);
-                }
-                ctx.fillStyle = 'black';
-                ctx.fill();
-                
-                // Draw the image using 'screen' so its black bg becomes transparent
-                ctx.globalCompositeOperation = 'screen';
                 ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
             } else {
                 // Fallback basic canvas drawing
