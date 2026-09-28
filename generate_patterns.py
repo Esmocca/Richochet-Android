@@ -47,11 +47,13 @@ patterns = []
 lily_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790573726237.png"
 patterns.append(img_to_pattern(lily_path, target_width=26))
 
-# Stage 2: Diamond
-patterns.append(img_to_pattern("diamond.png", target_width=22))
+# Stage 2: Butterfly
+butterfly_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790575365584.png"
+patterns.append(img_to_pattern(butterfly_path, target_width=30))
 
-# Stage 3: Flame
-patterns.append(img_to_pattern("flame.png", target_width=20))
+# Stage 3: Galaxy
+galaxy_path = r"C:\Users\Lenovo\.gemini\antigravity-ide\brain\12e00e43-cfb3-4c1c-98aa-23c85f0f3ba9\.user_uploaded\media_1790575461602.png"
+patterns.append(img_to_pattern(galaxy_path, target_width=30))
 
 # Stage 4: Star
 patterns.append(img_to_pattern("star.png", target_width=24))
