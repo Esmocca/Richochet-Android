@@ -2160,7 +2160,7 @@ class Game {
 
             // Coin body
             if (this.coinImg && this.coinImg.complete) {
-                const drawSize = coin.size * 2.5;
+                const drawSize = coin.size * 1.0;
                 ctx.drawImage(this.coinImg, -drawSize/2, -drawSize/2, drawSize, drawSize);
             } else {
                 ctx.beginPath();
@@ -3297,7 +3297,7 @@ class Game {
 
             // Ball body
             if (this.meteoriteImg && this.meteoriteImg.complete) {
-                const bSize = ball.radius * 4.5;
+                const bSize = ball.radius * 1.5;
                 ctx.drawImage(this.meteoriteImg, ball.x + ball.radius - bSize/2, ball.y + ball.radius - bSize/2, bSize, bSize);
             } else {
                 ctx.beginPath();
