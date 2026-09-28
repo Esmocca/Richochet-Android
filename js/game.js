@@ -4540,43 +4540,54 @@ class Game {
         const livesH = iconSize * 0.7;
         const livesY = uiY + (iconSize - livesH) / 2;
 
-        // Lives bar drop shadow
-        fillRoundedRect(ctx, livesX + 3, livesY + 4, livesW, livesH, livesH / 2, rgba(0, 0, 0, 130));
-
-        // Lives bar 3D background
-        const livesGrad = ctx.createLinearGradient(0, livesY, 0, livesY + livesH);
-        livesGrad.addColorStop(0, rgba(40, 45, 55, 220));
-        livesGrad.addColorStop(1, rgba(15, 20, 25, 220));
-        fillRoundedRect(ctx, livesX, livesY, livesW, livesH, livesH / 2, livesGrad);
-        drawRoundedRect(ctx, livesX, livesY, livesW, livesH, livesH / 2);
-        ctx.strokeStyle = rgba(131, 137, 145, 255);
-        ctx.lineWidth = 5;
-        ctx.stroke();
-
-        // Fill lives segments
+        // Health Bar (Continuous segments with thick black border)
+        const healthColors = [
+            rgba(168, 230, 207, 255), // Light mint
+            rgba(130, 218, 170, 255),
+            rgba(82, 200, 123, 255),
+            rgba(43, 179, 88, 255),
+            rgba(5, 155, 65, 255)     // Darkest green
+        ];
         const maxLives = 5;
-        const segGap = 4;
-        const segW = (livesW - 10 - segGap * (maxLives - 1)) / maxLives;
+        const segW = livesW / maxLives;
+        
+        // Draw segments
         for (let i = 0; i < maxLives; i++) {
             const hasLife = i < this.lives;
-            // 3D segment background
-            let segColor;
-            if (hasLife) {
-                segColor = ctx.createLinearGradient(0, livesY + 5, 0, livesY + 5 + livesH - 10);
-                segColor.addColorStop(0, rgba(150, 255, 180, 240));
-                segColor.addColorStop(1, rgba(30, 200, 80, 240));
-            } else {
-                segColor = rgba(50, 50, 60, 150);
-            }
-            const sx = livesX + 5 + i * (segW + segGap);
-            const r = (i === 0 || i === maxLives - 1) ? (livesH - 10) / 2 : 2;
-            fillRoundedRect(ctx, sx, livesY + 5, segW, livesH - 10, r, segColor);
-
-            // Bright top edge highlight for 3D effect
-            if (hasLife) {
-                fillRoundedRect(ctx, sx, livesY + 5, segW, (livesH - 10) * 0.4, r, rgba(255, 255, 255, 120));
-            }
+            ctx.fillStyle = hasLife ? healthColors[i] : rgba(50, 50, 50, 255);
+            ctx.fillRect(livesX + i * segW, livesY, segW, livesH);
         }
+        
+        // Thick black border around the whole bar
+        ctx.strokeStyle = rgba(20, 20, 20, 255);
+        ctx.lineWidth = 4;
+        ctx.strokeRect(livesX, livesY, livesW, livesH);
+        
+        // Heart icon & 100/100 text below the bar
+        const heartY = livesY + livesH + 12;
+        const heartSize = 12;
+        
+        // Draw heart shape
+        ctx.save();
+        ctx.translate(livesX + heartSize, heartY);
+        ctx.scale(heartSize/25, heartSize/25);
+        ctx.beginPath();
+        ctx.moveTo(0, 15);
+        ctx.bezierCurveTo(0, 0, -25, 0, -25, 15);
+        ctx.bezierCurveTo(-25, 30, 0, 45, 0, 50);
+        ctx.bezierCurveTo(0, 45, 25, 30, 25, 15);
+        ctx.bezierCurveTo(25, 0, 0, 0, 0, 15);
+        ctx.fillStyle = rgba(200, 30, 30, 255);
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = rgba(20, 20, 20, 255);
+        ctx.stroke();
+        ctx.restore();
+        
+        // 100/100 Text
+        const hpVal = Math.max(0, this.lives) * 20;
+        const hpText = `${hpVal}/100`;
+        drawText(ctx, hpText, livesX + heartSize * 2 + 10, heartY - 5, h * 0.035, rgba(230, 230, 230, 255));
 
         // ── Below Top-left: Score & Combo ──
         const scoreText = `${this.score}`;
@@ -4588,9 +4599,9 @@ class Game {
         // Draw PTS icon next to score
         if (this.ptsIconImg && this.ptsIconImg.complete && this.ptsIconImg.naturalWidth > 0) {
             const iconAspect = this.ptsIconImg.naturalWidth / this.ptsIconImg.naturalHeight;
-            const ptH = scoreSize * 0.8;
+            const ptH = scoreSize * 1.5; // Bigger icon
             const ptW = ptH * iconAspect;
-            ctx.drawImage(this.ptsIconImg, w * 0.03 + scoreW + 5, scoreY - ptH + 2, ptW, ptH);
+            ctx.drawImage(this.ptsIconImg, w * 0.03 + scoreW + 5, scoreY - ptH * 0.15, ptW, ptH);
         }
 
         if (this.combo > 1) {
