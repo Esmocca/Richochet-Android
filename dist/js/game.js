@@ -2321,9 +2321,9 @@ class Game {
         ctx.scale(pulse, pulse);
 
         let imgToDraw = null;
-        if (comp.id === 'comp1' && this.blitzImg && this.blitzImg.complete) imgToDraw = this.blitzImg;
-        else if (comp.id === 'comp2' && this.zappyImg && this.zappyImg.complete) imgToDraw = this.zappyImg;
-        else if (comp.id === 'comp3' && this.flankerImg && this.flankerImg.complete) imgToDraw = this.flankerImg;
+        if (comp.id === 'linear' && this.blitzImg && this.blitzImg.complete) imgToDraw = this.blitzImg;
+        else if (comp.id === 'zigzag' && this.zappyImg && this.zappyImg.complete) imgToDraw = this.zappyImg;
+        else if (comp.id === 'side' && this.flankerImg && this.flankerImg.complete) imgToDraw = this.flankerImg;
 
         if (imgToDraw) {
             ctx.drawImage(imgToDraw, -14, -14, 28, 28);
@@ -2645,9 +2645,9 @@ class Game {
             
             // Icon
             let imgToDraw = null;
-            if (comp.id === 'comp1' && this.blitzImg && this.blitzImg.complete) imgToDraw = this.blitzImg;
-            else if (comp.id === 'comp2' && this.zappyImg && this.zappyImg.complete) imgToDraw = this.zappyImg;
-            else if (comp.id === 'comp3' && this.flankerImg && this.flankerImg.complete) imgToDraw = this.flankerImg;
+            if (comp.id === 'linear' && this.blitzImg && this.blitzImg.complete) imgToDraw = this.blitzImg;
+            else if (comp.id === 'zigzag' && this.zappyImg && this.zappyImg.complete) imgToDraw = this.zappyImg;
+            else if (comp.id === 'side' && this.flankerImg && this.flankerImg.complete) imgToDraw = this.flankerImg;
             
             if (imgToDraw) {
                 const imgW = cardW * 0.25;
@@ -2721,13 +2721,13 @@ class Game {
             // Icon
             const iSize = h * 0.07;
             if (i === 0 && this.reviveImg && this.reviveImg.complete) {
-                const imgW = cardW * 0.25;
+                const imgW = cardW * 0.15;
                 const imgH = imgW * (this.reviveImg.height / this.reviveImg.width);
-                ctx.drawImage(this.reviveImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.08, imgW, imgH);
+                ctx.drawImage(this.reviveImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.15, imgW, imgH);
             } else if (i === 1 && this.speedsterImg && this.speedsterImg.complete) {
-                const imgW = cardW * 0.25;
+                const imgW = cardW * 0.15;
                 const imgH = imgW * (this.speedsterImg.height / this.speedsterImg.width);
-                ctx.drawImage(this.speedsterImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.08, imgW, imgH);
+                ctx.drawImage(this.speedsterImg, ix + (cardW - imgW)/2, iy + cTitleH + cardH * 0.15, imgW, imgH);
             } else {
                 const iW = textWidth(ctx, item.icon, iSize);
                 drawText(ctx, item.icon, ix + (cardW - iW)/2, iy + cTitleH + cardH * 0.15, iSize, `rgb(${item.color.join(',')})`);
