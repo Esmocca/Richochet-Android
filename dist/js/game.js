@@ -583,6 +583,7 @@ class Game {
     resetBallAndPaddle(fullReset = false) {
         this.paddleX = PLAY_AREA_WIDTH / 2;
         this.paddleY = 223;
+        this.multiUseCount = 0;
 
         // Increase base speed per level
         const levelSpeedBoost = this.currentLevel * 10;
@@ -1558,6 +1559,11 @@ class Game {
 
             // Remove dead balls
             this.balls = this.balls.filter(b => b.alive);
+            
+            // Reset MULTI powerup limit if we're back down to a single ball
+            if (this.balls.length <= 1) {
+                this.multiUseCount = 0;
+            }
 
             // If all balls lost
             if (this.balls.length === 0) {
@@ -1694,13 +1700,6 @@ class Game {
             if (ballCX + ball.radius > bLeft && ballCX - ball.radius < bRight &&
                 ballCY + ball.radius > bTop && ballCY - ball.radius < bBottom) {
 
-                brick.destroyed = true;
-
-                // Coin drop chance (30%)
-                if (Math.random() < 0.30) {
-                    this.spawnCoinDrop(brick.x, brick.y);
-                }
-
                 // Proper collision detection
                 const overlapLeft = (ballCX + ball.radius) - bLeft;
                 const overlapRight = bRight - (ballCX - ball.radius);
@@ -1715,62 +1714,7 @@ class Game {
                     ball.vy = -ball.vy;
                 }
 
-                // Score with combo
-                this.combo++;
-                this.comboTimer = 2.0;
-                const comboMultiplier = Math.min(this.combo, 5);
-                const points = brick.points * comboMultiplier;
-                this.score += points;
-
-                // Floating text for combo
-                if (this.combo >= 2) {
-                    this.spawnFloatingText(
-                        brick.x, brick.y - 10,
-                        `x${this.combo}`,
-                        this.combo >= 5 ? [255, 50, 255] : this.combo >= 3 ? [255, 200, 0] : [0, 255, 200]
-                    );
-                }
-
-                // Juice
-                this.shakeTimer = 0.15;
-                this.shakeIntensity = 3.5;
-                this.hitLagTimer = 0.04;
-                
-                // Spawn hit effect (burst, or boom if combo > 10)
-                this.spawnHitEffect(brick.x, brick.y, this.combo > 10);
-
-                // Audio variant based on combo
-                if (this.combo >= 3) {
-                    this.audio.init(); this.audio.playComboSound(this.combo);
-                } else {
-                    this.audio.init(); this.audio.playBrickSound(1.0 + this.combo * 0.05);
-                }
-                this.spawnParticles(brick.x, brick.y, brick.color);
-
-                // Powerup spawn chance
-                if (Math.random() < 0.15) {
-                    this.spawnPowerup(brick.x, brick.y);
-                }
-
-                increaseSpeed();
-
-                if (this.bricks.every(b => b.destroyed)) {
-                    this.currentLevel++;
-                    if (this.currentLevel >= 5) {
-                        this.isNewHighScore = this.score > this.highScore;
-                        if (this.isNewHighScore) {
-                            this.highScore = this.score;
-                            this.saveSettings();
-                        }
-                        this.audio.init(); this.audio.playLevelClear();
-                        this.triggerStateTransition(GameState.StageClear);
-                    } else {
-                        this.audio.init(); this.audio.playLevelClear();
-                        this.lives = 3 + (this.extraLives || 0); // Reset lives per stage
-                        this.resetBallAndPaddle(false);
-                        this.initBricks();
-                    }
-                }
+                this.triggerSplashDamage(brick, true);
                 break;
             }
         }
@@ -2032,7 +1976,10 @@ class Game {
     // ─── Powerups ─────────────────────────────────────
 
     spawnPowerup(x, y) {
-        const types = ['WIDE', 'SLOW', 'MULTI'];
+        let types = ['WIDE', 'SLOW', 'MULTI'];
+        if ((this.multiUseCount || 0) >= 4) {
+            types = ['WIDE', 'SLOW'];
+        }
         const type = types[Math.floor(Math.random() * types.length)];
         const colors = { 'WIDE': [0, 255, 100], 'SLOW': [255, 200, 0], 'MULTI': [255, 50, 50] };
 
@@ -2088,6 +2035,7 @@ class Game {
         } else if (type === 'SLOW') {
             this.powerupActive.slow = 8;
         } else if (type === 'MULTI') {
+            this.multiUseCount = (this.multiUseCount || 0) + 1;
             // Multi-ball: spawn 2 extra balls from each existing ball
             const newBalls = [];
             for (const ball of this.balls) {
@@ -2150,6 +2098,91 @@ class Game {
     }
 
     // ─── Coin Drops ──────────────────────────────────
+
+    triggerSplashDamage(centerBrick, isBall) {
+        const radius = (this.combo >= 10) ? 4 : 2;
+        const splashW = centerBrick.w * radius;
+        const splashH = centerBrick.h * radius;
+
+        let anyDestroyed = false;
+
+        for (const b of this.bricks) {
+            if (b.destroyed) continue;
+
+            const dx = Math.abs(b.x - centerBrick.x);
+            const dy = Math.abs(b.y - centerBrick.y);
+
+            if (dx <= splashW + 1 && dy <= splashH + 1) {
+                b.destroyed = true;
+                anyDestroyed = true;
+
+                // Coin drop chance (30%)
+                if (Math.random() < 0.30) {
+                    this.spawnCoinDrop(b.x, b.y);
+                }
+
+                // Powerup spawn chance (15%) for balls only
+                if (isBall && Math.random() < 0.15) {
+                    this.spawnPowerup(b.x, b.y);
+                }
+
+                this.combo++;
+                this.comboTimer = 2.0;
+                const comboMultiplier = Math.min(this.combo, 5);
+                const points = b.points * comboMultiplier;
+                this.score += points;
+
+                // Floating text for combo
+                if (this.combo >= 2) {
+                    this.spawnFloatingText(
+                        b.x, b.y - 10,
+                        `x${this.combo}`,
+                        this.combo >= 5 ? [255, 50, 255] : this.combo >= 3 ? [255, 200, 0] : [0, 255, 200]
+                    );
+                }
+
+                this.spawnParticles(b.x, b.y, b.color);
+            }
+        }
+
+        if (anyDestroyed) {
+            // Juice
+            this.shakeTimer = 0.15;
+            this.shakeIntensity = 3.5;
+            this.hitLagTimer = 0.04;
+
+            this.spawnHitEffect(centerBrick.x, centerBrick.y, this.combo > 10);
+
+            // Audio variant based on combo
+            if (this.combo >= 3) {
+                this.audio.init(); this.audio.playComboSound(this.combo);
+            } else {
+                this.audio.init(); this.audio.playBrickSound(1.0 + this.combo * 0.05);
+            }
+
+            if (isBall) {
+                increaseSpeed();
+            }
+
+            if (this.bricks.every(b => b.destroyed)) {
+                this.currentLevel++;
+                if (this.currentLevel >= 5) {
+                    this.isNewHighScore = this.score > this.highScore;
+                    if (this.isNewHighScore) {
+                        this.highScore = this.score;
+                        this.saveSettings();
+                    }
+                    this.audio.init(); this.audio.playLevelClear();
+                    this.triggerStateTransition(GameState.StageClear);
+                } else {
+                    this.audio.init(); this.audio.playLevelClear();
+                    this.lives = 3 + (this.extraLives || 0);
+                    this.resetBallAndPaddle(false);
+                    this.initBricks();
+                }
+            }
+        }
+    }
 
     spawnCoinDrop(x, y) {
         this.coinDrops.push({
@@ -2322,46 +2355,7 @@ class Game {
 
                 if (proj.x + proj.size > bLeft && proj.x - proj.size < bRight &&
                     proj.y + proj.size > bTop && proj.y - proj.size < bBottom) {
-                    brick.destroyed = true;
-
-                    this.combo++;
-                    this.comboTimer = 2.0;
-                    const comboMultiplier = Math.min(this.combo, 5);
-                    const points = brick.points * comboMultiplier;
-                    this.score += points;
-
-                    if (Math.random() < 0.30) {
-                        this.spawnCoinDrop(brick.x, brick.y);
-                    }
-
-                    this.spawnParticles(brick.x, brick.y, brick.color);
-                    this.audio.init(); this.audio.playBrickSound(1.0);
-
-                    if (this.combo >= 2) {
-                        this.spawnFloatingText(
-                            brick.x, brick.y - 10,
-                            `x${this.combo}`,
-                            this.combo >= 5 ? [255, 50, 255] : this.combo >= 3 ? [255, 200, 0] : [0, 255, 200]
-                        );
-                    }
-
-                    if (this.bricks.every(b => b.destroyed)) {
-                        this.currentLevel++;
-                        if (this.currentLevel >= 5) {
-                            this.isNewHighScore = this.score > this.highScore;
-                            if (this.isNewHighScore) {
-                                this.highScore = this.score;
-                                this.saveSettings();
-                            }
-                            this.audio.init(); this.audio.playLevelClear();
-                            this.triggerStateTransition(GameState.StageClear);
-                        } else {
-                            this.audio.init(); this.audio.playLevelClear();
-                            this.lives = 3 + (this.extraLives || 0);
-                            this.resetBallAndPaddle(false);
-                            this.initBricks();
-                        }
-                    }
+                    this.triggerSplashDamage(brick, false);
 
                     return false; // Projectile destroyed on contact
                 }
