@@ -175,7 +175,7 @@ class Game {
 
         this.baseSpeed = 130;
         this.currentSpeed = 130;
-        this.maxSpeed = 350;
+        this.maxSpeed = 260; // 2x baseSpeed
         this.speedMultiplier = 1.0;
 
         this.paddleWidth = 36;
@@ -2096,15 +2096,23 @@ class Game {
     // ─── Coin Drops ──────────────────────────────────
 
     triggerSplashDamage(centerBrick, isBall) {
-        let radius = 0; // default for projectile and ball: no splash
+        let maxDestroyed = 1; // Default: destroy only the hit brick
+        let radius = 0; 
+        
+        if (isBall && this.combo >= 10) {
+            maxDestroyed = 2; // Destroy 2 blocks when BOOM triggers
+            radius = 1.0;     // Allow a small radius to catch adjacent blocks
+        }
 
         const splashW = centerBrick.w * radius;
         const splashH = centerBrick.h * radius;
 
         let anyDestroyed = false;
+        let destroyedCount = 0;
 
         for (const b of this.bricks) {
             if (b.destroyed) continue;
+            if (destroyedCount >= maxDestroyed) break;
 
             const dx = Math.abs(b.x - centerBrick.x);
             const dy = Math.abs(b.y - centerBrick.y);
@@ -2112,6 +2120,7 @@ class Game {
             if (dx <= splashW + 1 && dy <= splashH + 1) {
                 b.destroyed = true;
                 anyDestroyed = true;
+                destroyedCount++;
 
                 // Coin drop chance (30%)
                 if (Math.random() < 0.30) {
